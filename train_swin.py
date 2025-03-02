@@ -5,38 +5,26 @@ from torchvision import transforms, datasets
 from torch.utils.data import DataLoader, random_split
 from timm import create_model
 import os
-
+# PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0
 # ✅ Set Device (GPU if available)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Fix MPS Support for macOS (if applicable)
-if torch.backends.mps.is_available():
-    device = torch.device("mps")
+# if torch.backends.mps.is_available():
+#     device = torch.device("mps")
 
 # ✅ Define Swin Transformer Model (Using Pretrained Weights)
-# class CustomSwin(nn.Module):
-#     def __init__(self, num_classes=2):
-#         super(CustomSwin, self).__init__()
-#         self.swin = create_model("swin_base_patch4_window7_224", pretrained=False, num_classes=num_classes)
-
-#     # def forward(self, x):
-#     #     return self.swin(x)
-#     def forward(self, x):
-#         x = self.forward(x)  # Extract features before classification
-#         return x  # Ensure it's returning (batch_size, feature_dim)
-
 class CustomSwin(nn.Module):
     def __init__(self, num_classes=2):
         super(CustomSwin, self).__init__()
         self.swin = create_model("swin_base_patch4_window7_224", pretrained=True, num_classes=num_classes)
-        self.swin.head = nn.Identity()  # Remove classification head
-        self.fc = nn.Linear(1024, num_classes)
 
     def forward(self, x):
-        x = self.swin.forward_features(x)  # Extract features before classification
-        x = x.mean(dim=[2, 3])  # Global Average Pooling to get (batch_size, feature_dim)
-        x = self.fc(x)
-        return x
+        x = self.swin.forward_features(x)  # Shape: (batch_size, 7, 7, 1024)
+        # Apply Global Average Pooling (GAP) to reduce spatial dimensions
+        x = x.mean(dim=[1, 2])  # Now shape is (batch_size, 1024)
+        print("Swin Output Shape:", x.shape)
+        return x 
 
 # ✅ Data Transformations (Augmentation Added)
 transform = transforms.Compose([
@@ -50,7 +38,7 @@ transform = transforms.Compose([
 # ✅ Load Dataset
 dataset = datasets.ImageFolder(root="data/extracted_faces", transform=transform)
 
-# print(dataset.class_to_idx)  {real:0 _ fake:1}
+print(dataset.class_to_idx) 
 
 # ✅ Split into Training (80%) and Validation (20%)
 train_size = int(0.8 * len(dataset))

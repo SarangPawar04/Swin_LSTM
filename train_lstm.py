@@ -12,7 +12,7 @@ real_labels = torch.zeros(real_features.shape[0], dtype=torch.long)  # 0 for rea
 fake_labels = torch.ones(fake_features.shape[0], dtype=torch.long)   # 1 for fake
 
 print(real_features.shape, fake_features.shape)  
-
+# Ensure features are in (num_samples, sequence_length, feature_dim)
 
 # Combine real and fake datasets
 features = torch.cat([real_features, fake_features], dim=0)
@@ -33,6 +33,8 @@ class FeatureDataset(Dataset):
 # Create DataLoader
 dataset = FeatureDataset(features, labels)
 train_loader = DataLoader(dataset, batch_size=8, shuffle=True)
+# Ensure features are in (batch_size, sequence_length, feature_dim)
+print("Reshaped Feature Shape for LSTM:", features.shape)  # Debugging
 
 # Define LSTM Model
 class CustomLSTM(nn.Module):
@@ -43,8 +45,12 @@ class CustomLSTM(nn.Module):
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):
+        x = x.view(x.shape[0], 7, 1024)  # Ensure correct shape
         lstm_out, _ = self.lstm(x)
-        lstm_out = lstm_out[:, -1, :]
+
+        print("LSTM Output Shape:", lstm_out.shape)  # Debugging
+
+        lstm_out = lstm_out[:, -1, :]  # Extract last time step
         out = self.fc(lstm_out)
         return self.softmax(out)
 
@@ -55,7 +61,7 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
 # Training Loop
-EPOCHS = 10
+EPOCHS = 1
 for epoch in range(EPOCHS):
     model.train()
     total_loss = 0
