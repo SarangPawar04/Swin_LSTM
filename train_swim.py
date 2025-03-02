@@ -14,13 +14,29 @@ if torch.backends.mps.is_available():
     device = torch.device("mps")
 
 # ✅ Define Swin Transformer Model (Using Pretrained Weights)
+# class CustomSwin(nn.Module):
+#     def __init__(self, num_classes=2):
+#         super(CustomSwin, self).__init__()
+#         self.swin = create_model("swin_base_patch4_window7_224", pretrained=False, num_classes=num_classes)
+
+#     # def forward(self, x):
+#     #     return self.swin(x)
+#     def forward(self, x):
+#         x = self.forward(x)  # Extract features before classification
+#         return x  # Ensure it's returning (batch_size, feature_dim)
+
 class CustomSwin(nn.Module):
     def __init__(self, num_classes=2):
         super(CustomSwin, self).__init__()
-        self.swin = create_model("swin_base_patch4_window7_224", pretrained=False, num_classes=num_classes)
+        self.swin = create_model("swin_base_patch4_window7_224", pretrained=True, num_classes=num_classes)
+        self.swin.head = nn.Identity()  # Remove classification head
+        self.fc = nn.Linear(1024, num_classes)
 
     def forward(self, x):
-        return self.swin(x)
+        x = self.swin.forward_features(x)  # Extract features before classification
+        x = x.mean(dim=[2, 3])  # Global Average Pooling to get (batch_size, feature_dim)
+        x = self.fc(x)
+        return x
 
 # ✅ Data Transformations (Augmentation Added)
 transform = transforms.Compose([
@@ -59,7 +75,7 @@ optimizer = optim.AdamW(model.parameters(), lr=3e-5)  # AdamW is better for tran
 scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.5)  # Learning Rate Decay
 
 # ✅ Training Loop with Validation & Best Model Saving
-EPOCHS = 10
+EPOCHS = 1
 best_val_loss = float("inf")
 
 for epoch in range(EPOCHS):

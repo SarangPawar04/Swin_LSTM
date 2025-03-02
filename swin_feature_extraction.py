@@ -7,10 +7,10 @@ import os
 
 # Load trained Swin model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-#swin_model = create_model("swin_base_patch4_window7_224", num_classes=2, pretrained=False)
-swin_model = CustomSwin(num_classes=2)
+swin_model = create_model("swin_base_patch4_window7_224", num_classes=2, pretrained=True)
+#swin_model = CustomSwin(num_classes=2)
 swin_model.head = torch.nn.Identity()
-swin_model.load_state_dict(torch.load("models/swin_model_best.pth"))
+swin_model.load_state_dict(torch.load("models/swin_model_best.pth"), strict=False)
 swin_model.eval().to(device)
 
 transform = transforms.Compose([
@@ -41,13 +41,20 @@ def extract_and_save_features(face_root_folder, feature_output_folder):
             img = Image.open(face_path).convert("RGB")
             img = transform(img).unsqueeze(0).to(device)
 
+            # with torch.no_grad():
+            #     features = swin_model.forward(img)
+            #     features = features.mean(dim=[2, 3])
+            #     #features = swin_model(img)
             with torch.no_grad():
-                # features = swin_model.forward(img)
-                # features = features.mean(dim=[2, 3])
                 features = swin_model(img)
+                print("Feature shape:", features.shape)  # Debugging step
+
+                if features.dim() == 4:  # If features include spatial dimensions
+                    features = features.mean(dim=[2, 3])  # Perform spatial averaging
 
             feature_tensor = features.squeeze().flatten()
             all_features.append(feature_tensor)
+            print("Feature shape:", features.shape)
 
         # Save all features of this category in a single file
         torch.save(torch.stack(all_features), os.path.join(feature_output_folder, f"{category}.pt"))
@@ -55,3 +62,4 @@ def extract_and_save_features(face_root_folder, feature_output_folder):
 
 # Example Usage
 extract_and_save_features("data/extracted_faces/", "dataset/extracted_features/")
+
