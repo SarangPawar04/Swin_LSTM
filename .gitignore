@@ -1,0 +1,4 @@
+.DS_Store
+/data/extracted_faces/fake/.DS_Store
+/data/extracted_faces/real/.DS_Store
+/data/extracted_faces/.DS_Store
