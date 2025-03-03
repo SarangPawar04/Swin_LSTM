@@ -55,4 +55,4 @@ def extract_faces(frame_folder, output_folder):
     print(f"📊 Total Faces Saved: {processed_images}")
 
 # Example Usage
-extract_faces("data/extracted_frames/fake", "data/extracted_faces/")
+extract_faces("data/extracted_frames/real", "data/extracted_faces/")

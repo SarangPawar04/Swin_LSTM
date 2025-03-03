@@ -38,6 +38,7 @@ def extract_and_save_features(face_folder, feature_output_folder):
                 print(f"⚠️ Skipping missing file: {face_path}")
                 continue
 
+                
             img = Image.open(face_path).convert("RGB")
             img = transform(img).unsqueeze(0).to(device)
 
