@@ -45,13 +45,9 @@ class CustomLSTM(nn.Module):
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):
-        x = x.view(x.shape[0], 7, 1024)  # Ensure correct shape
+        x = x.unsqueeze(1)  # Add sequence dimension: [batch_size, 1, 1024]
         lstm_out, _ = self.lstm(x)
-
-        print("LSTM Output Shape:", lstm_out.shape)  # Debugging
-
-        lstm_out = lstm_out[:, -1, :]  # Extract last time step
-        out = self.fc(lstm_out)
+        out = self.fc(lstm_out[:, -1, :])  # Take the output from the last time step
         return self.softmax(out)
 
 # Initialize model
