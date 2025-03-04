@@ -1,40 +1,153 @@
-import os
 import torch
-from lstm_model import TemporalLSTM
+from PIL import Image
+import os
+from lstm_model import DeepfakeLSTM
+from swin_feature_extraction import transform, swin_model, split_features_into_chunks
 
-# Load trained LSTM model
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-lstm_model = TemporalLSTM().to(device)
-lstm_model.load_state_dict(torch.load("models/lstm_model_custom.pth"))
-lstm_model.eval()
-
-def detect_deepfake(features_file):
-    """Returns confidence score instead of just a label"""
-    features = torch.load(features_file).unsqueeze(0).to(device)
+def detect_deepfake(image_path, lstm_model_path="models/lstm_model_best.pth"):
+    """
+    Detect if an image is real or fake using the trained LSTM model.
+    
+    Args:
+        image_path (str): Path to the input image
+        lstm_model_path (str): Path to the trained LSTM model weights
+        
+    Returns:
+        tuple: (prediction (0=fake, 1=real), confidence score)
+    """
+    print(f"\nProcessing image: {image_path}")
+    
+    # Check if image exists
+    if not os.path.exists(image_path):
+        raise FileNotFoundError(f"Image not found: {image_path}")
+    
+    # Check if model exists
+    if not os.path.exists(lstm_model_path):
+        raise FileNotFoundError(f"LSTM model not found: {lstm_model_path}")
+    
+    print("Setting up device...")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
+    
+    # Load and initialize models
+    print("Loading LSTM model...")
+    lstm_model = DeepfakeLSTM().to(device)
+    try:
+        lstm_model.load_state_dict(torch.load(lstm_model_path, map_location=device))
+        print("✓ LSTM model loaded successfully")
+    except Exception as e:
+        raise Exception(f"Error loading LSTM model: {str(e)}")
+    
+    lstm_model.eval()
+    
+    # Load and preprocess image
+    print("Loading and preprocessing image...")
+    try:
+        img = Image.open(image_path).convert("RGB")
+        img_tensor = transform(img).unsqueeze(0).to(device)
+        print("✓ Image preprocessed successfully")
+    except Exception as e:
+        raise Exception(f"Error preprocessing image: {str(e)}")
+    
+    # Extract features using Swin Transformer
+    print("Extracting features...")
     with torch.no_grad():
-        prediction = lstm_model(features)
-        confidence = torch.softmax(prediction, dim=1)[0, 1].item()  # Fake class probability
-    return confidence  # Return probability instead of label
+        try:
+            features = swin_model.forward_features(img_tensor)
+            if features.dim() == 4:
+                features = features.mean(dim=[1, 2])  # GAP
+            print("✓ Features extracted successfully")
+            
+            # Split features into chunks
+            feature_tensor = features.squeeze()
+            print(f"Feature tensor shape: {feature_tensor.shape}")
+            
+            chunked_features = split_features_into_chunks(feature_tensor)
+            print(f"Chunked features shape: {chunked_features.shape}")
+            
+            chunked_features = chunked_features.unsqueeze(0)  # Add batch dimension
+            print(f"Final input shape: {chunked_features.shape}")
+            
+            # Get prediction from LSTM
+            print("Running LSTM prediction...")
+            output = lstm_model(chunked_features)
+            print(f"Raw LSTM output: {output}")
+            
+            # Convert to probability and get binary prediction
+            prob = float(output.cpu().numpy())  # Convert to float
+            print(f"Probability: {prob}")
+            
+            # Ensure probability is between 0 and 1
+            prob = max(0, min(1, prob))
+            
+            # Get binary prediction (0 for fake, 1 for real)
+            prediction = int(prob >= 0.5)
+            
+            # Calculate confidence score (distance from decision boundary)
+            confidence = prob if prediction == 1 else (1 - prob)
+            
+            print(f"Final prediction: {prediction} (confidence: {confidence:.4f})")
+            return prediction, confidence
+            
+        except Exception as e:
+            raise Exception(f"Error during feature extraction or prediction: {str(e)}")
 
-def detect_video(test_faces_folder, threshold=0.4, min_fake_frames=3):
-    """Classifies video as deepfake based on an adaptive threshold"""
-    deepfake_confidences = []
-    total_faces = 0
+def batch_detect(input_dir, output_file="results.txt"):
+    """
+    Process multiple images in a directory and save results to a file.
+    
+    Args:
+        input_dir (str): Directory containing images to process
+        output_file (str): Path to save results
+    """
+    if not os.path.exists(input_dir):
+        raise FileNotFoundError(f"Input directory not found: {input_dir}")
+        
+    print(f"\nProcessing images from: {input_dir}")
+    results = []
+    
+    # Create models directory if it doesn't exist
+    os.makedirs("models", exist_ok=True)
+    
+    # Process each image
+    for img_name in sorted(os.listdir(input_dir)):
+        if img_name.startswith('.'):  # Skip hidden files
+            continue
+            
+        if img_name.lower().endswith(('.png', '.jpg', '.jpeg')):
+            img_path = os.path.join(input_dir, img_name)
+            try:
+                prediction, confidence = detect_deepfake(img_path)
+                status = "Real" if prediction == 1 else "Fake"
+                results.append(f"{img_name}: {status} (prediction: {prediction}, confidence: {confidence:.4f})")
+                print(f"✓ Processed {img_name} - {status} (prediction: {prediction}, confidence: {confidence:.4f})")
+            except Exception as e:
+                print(f"❌ Error processing {img_name}: {str(e)}")
+                results.append(f"{img_name}: Error - {str(e)}")
+    
+    # Save results
+    with open(output_file, 'w') as f:
+        f.write('\n'.join(results))
+    print(f"\n✅ Results saved to {output_file}")
 
-    for face_feature in os.listdir(test_faces_folder):
-        face_feature_path = os.path.join(test_faces_folder, face_feature)
-        confidence = detect_deepfake(face_feature_path)
-        deepfake_confidences.append(confidence)
-        total_faces += 1
-
-    # Compute average confidence & count of confident fake frames
-    avg_confidence = sum(deepfake_confidences) / total_faces if total_faces > 0 else 0
-    high_conf_fake_frames = sum(1 for c in deepfake_confidences if c > threshold)
-
-    # If avg confidence is high or enough fake frames are detected, classify as deepfake
-    if avg_confidence > threshold or high_conf_fake_frames >= min_fake_frames:
-        return "Deepfake"
-    return "Real"
-
-# Example Usage
-# print(detect_video("dataset/test_features/"))
+if __name__ == "__main__":
+    try:
+        # Example usage for a single image
+        image_path = "data/extracted_faces/real/frame_90_face_0_real.jpg"  # Update with an actual image path
+        if os.path.exists(image_path):
+            prediction, confidence = detect_deepfake(image_path)
+            status = "Real" if prediction == 1 else "Fake"
+            print(f"Prediction: {status} ({prediction})")
+            print(f"Confidence: {confidence:.4f}")
+        else:
+            print(f"Image not found: {image_path}")
+        
+        # Example usage for batch processing
+        input_dir = "data/extracted_faces/real"  # Update with your input directory
+        if os.path.exists(input_dir):
+            batch_detect(input_dir)
+        else:
+            print(f"Directory not found: {input_dir}")
+            
+    except Exception as e:
+        print(f"❌ Error: {str(e)}")

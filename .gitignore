@@ -1,4 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+
+# macOS
 .DS_Store
-data/extracted_faces/fake/.DS_Store
-data/extracted_faces/real/.DS_Store
-data/extracted_faces/.DS_Store
+.AppleDouble
+.LSOverride
+
+# Data and model files (large files)
+data/extracted_faces/
+data/extracted_frames/
+data/test_faces/
+data/train_faces/
+data/videos/
+dataset/extracted_features/
+models/*.pth
+
+# Results
+results.txt

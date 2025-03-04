@@ -31,5 +31,5 @@ def extract_frames(video_path, output_folder, frame_rate=5):
     print(f"✅ Extracted frames saved in {labeled_output_folder}")
 
 # Example Usage
-extract_frames("data/videos/fake/fake_01.mp4", "data/extracted_frames/")
+extract_frames("data/videos/real/real_02.mp4", "data/extracted_frames/xyz/")
 
