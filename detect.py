@@ -3,6 +3,7 @@ from PIL import Image
 import os
 from lstm_model import DeepfakeLSTM
 from swin_feature_extraction import transform, swin_model, split_features_into_chunks
+import argparse
 
 def detect_deepfake(image_path, lstm_model_path="models/lstm_model_best.pth"):
     """
@@ -86,41 +87,39 @@ def detect_deepfake(image_path, lstm_model_path="models/lstm_model_best.pth"):
             # Calculate confidence score (distance from decision boundary)
             confidence = prob if prediction == 1 else (1 - prob)
             
-            print(f"Final prediction: {prediction} (confidence: {confidence:.4f})")
+            print(f"Final prediction: {'Real' if prediction == 1 else 'Fake'} (confidence: {confidence:.4f})")
             return prediction, confidence
             
         except Exception as e:
             raise Exception(f"Error during feature extraction or prediction: {str(e)}")
 
-def batch_detect(input_dir, output_file="results.txt"):
+def process_folder(input_dir, output_file="results.txt"):
     """
-    Process multiple images in a directory and save results to a file.
+    Process all face images in a directory and save results to a file.
     
     Args:
-        input_dir (str): Directory containing images to process
+        input_dir (str): Directory containing face images to process
         output_file (str): Path to save results
     """
     if not os.path.exists(input_dir):
         raise FileNotFoundError(f"Input directory not found: {input_dir}")
         
-    print(f"\nProcessing images from: {input_dir}")
+    print(f"\nProcessing faces from: {input_dir}")
     results = []
     
     # Create models directory if it doesn't exist
     os.makedirs("models", exist_ok=True)
     
     # Process each image
+    image_extensions = ('.jpg', '.jpeg', '.png')
     for img_name in sorted(os.listdir(input_dir)):
-        if img_name.startswith('.'):  # Skip hidden files
-            continue
-            
-        if img_name.lower().endswith(('.png', '.jpg', '.jpeg')):
+        if img_name.lower().endswith(image_extensions):
             img_path = os.path.join(input_dir, img_name)
             try:
                 prediction, confidence = detect_deepfake(img_path)
                 status = "Real" if prediction == 1 else "Fake"
-                results.append(f"{img_name}: {status} (prediction: {prediction}, confidence: {confidence:.4f})")
-                print(f"✓ Processed {img_name} - {status} (prediction: {prediction}, confidence: {confidence:.4f})")
+                results.append(f"{img_name}: {status} (confidence: {confidence:.4f})")
+                print(f"✓ Processed {img_name} - {status} (confidence: {confidence:.4f})")
             except Exception as e:
                 print(f"❌ Error processing {img_name}: {str(e)}")
                 results.append(f"{img_name}: Error - {str(e)}")
@@ -131,23 +130,13 @@ def batch_detect(input_dir, output_file="results.txt"):
     print(f"\n✅ Results saved to {output_file}")
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Detect deepfakes in face images')
+    parser.add_argument('--input', required=True, help='Input directory containing face images')
+    parser.add_argument('--output', default='results.txt', help='Output file to save results')
+    
+    args = parser.parse_args()
+    
     try:
-        # Example usage for a single image
-        image_path = "data/extracted_faces/real/frame_90_face_0_real.jpg"  # Update with an actual image path
-        if os.path.exists(image_path):
-            prediction, confidence = detect_deepfake(image_path)
-            status = "Real" if prediction == 1 else "Fake"
-            print(f"Prediction: {status} ({prediction})")
-            print(f"Confidence: {confidence:.4f}")
-        else:
-            print(f"Image not found: {image_path}")
-        
-        # Example usage for batch processing
-        input_dir = "data/extracted_faces/real"  # Update with your input directory
-        if os.path.exists(input_dir):
-            batch_detect(input_dir)
-        else:
-            print(f"Directory not found: {input_dir}")
-            
+        process_folder(args.input, args.output)
     except Exception as e:
         print(f"❌ Error: {str(e)}")

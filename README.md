@@ -74,7 +74,7 @@ Before training, you need to extract **frames** and **faces** from videos.
 - Extract frames using:
 
 ```bash
-python extract_frames.py --input data/videos/video.mp4 --output data/extracted_frames/
+python extract_frames.py --input data/videos/ --output data/extracted_frames/
 ```
 
 - Extracted frames will be stored in `data/extracted_frames/`.
@@ -176,7 +176,7 @@ After training, you can test the model on a new video.
 
 ### **2. Extract Frames from the Test Video**
 ```bash
-python extract_frames.py --input data/videos/test_video.mp4 --output data/test_frames/
+python extract_frames.py --input data/videos/test/ --output data/test_frames/
 ```
 
 ### **3. Extract Faces from Frames**
