@@ -1,58 +1,105 @@
 from facenet_pytorch import MTCNN
 from PIL import Image
 import os
+import argparse
 
-# ✅ Initialize MTCNN with Improved Settings
+# Initialize MTCNN with Improved Settings
 mtcnn = MTCNN(keep_all=True, min_face_size=10, thresholds=[0.6, 0.7, 0.7])
 
-def extract_faces(frame_folder, output_folder):
+def extract_faces_training(frame_folder, output_folder, category):
     """
-    Detects and extracts faces from frames using MTCNN.
+    Extract faces for training data (with real/fake categories)
+    """
+    category_output = os.path.join(output_folder, category)
+    os.makedirs(category_output, exist_ok=True)
     
-    Parameters:
-        frame_folder (str): Folder containing extracted frames.
-        output_folder (str): Folder where cropped faces will be saved.
-    """
-    # ✅ Assign Labels Based on Folder Name
-    label = "real" if "real" in frame_folder.lower() else "fake"
-    labeled_output_folder = os.path.join(output_folder, label)
-    os.makedirs(labeled_output_folder, exist_ok=True)
+    category_input = os.path.join(frame_folder, category)
+    if not os.path.exists(category_input):
+        print(f"❌ {category} folder not found in {frame_folder}")
+        return
 
-    processed_images = 0  # Counter for successful face detections
-
-    for frame in sorted(os.listdir(frame_folder)):
-        frame_path = os.path.join(frame_folder, frame)
-
+    processed_images = 0
+    print(f"\n📁 Processing {category} frames...")
+    
+    for frame in sorted(os.listdir(category_input)):
+        frame_path = os.path.join(category_input, frame)
         try:
-            # ✅ Load Image with Exception Handling
             img = Image.open(frame_path).convert("RGB")
-        except Exception as e:
-            print(f"❌ Error reading {frame_path}: {e}")
-            continue  # Skip to the next image
+            faces, _ = mtcnn.detect(img)
+            
+            if faces is None:
+                print(f"🔸 No faces detected in {frame}. Skipping.")
+                continue
 
-        # ✅ Detect Faces
-        faces, _ = mtcnn.detect(img)
-        
-        if faces is None:
-            print(f"🔸 No faces detected in {frame}. Skipping.")
-            continue  # No faces found, move to next frame
+            print(f"🟢 Processing {frame} - Detected {len(faces)} face(s)")
 
-        print(f"🟢 Processing {frame} - Detected {len(faces)} face(s)")
-
-        # ✅ Save Cropped Faces
-        for i, face in enumerate(faces):
-            try:
-                x1, y1, x2, y2 = map(int, face)  # Convert to integer coordinates
+            for i, face in enumerate(faces):
+                x1, y1, x2, y2 = map(int, face)
                 face_crop = img.crop((x1, y1, x2, y2)).resize((224, 224))
-                face_path = os.path.join(labeled_output_folder, f"{frame[:-4]}_face_{i}_{label}.jpg")
-
+                face_path = os.path.join(category_output, f"{frame[:-4]}_face_{i}_{category}.jpg")
                 face_crop.save(face_path)
                 processed_images += 1
-            except Exception as e:
-                print(f"❌ Error processing face {i} in {frame}: {e}")
+        except Exception as e:
+            print(f"❌ Error processing {frame}: {e}")
 
-    print(f"✅ Faces extracted and saved in {labeled_output_folder}")
-    print(f"📊 Total Faces Saved: {processed_images}")
+    print(f"✅ {category.capitalize()} faces extracted and saved in {category_output}")
+    print(f"📊 Total {category.capitalize()} Faces Saved: {processed_images}")
 
-# Example Usage
-extract_faces("data/extracted_frames/xyz/real", "data/test_faces/")
+def extract_faces_testing(frame_folder, output_folder):
+    """
+    Extract faces for testing data (no categories)
+    """
+    os.makedirs(output_folder, exist_ok=True)
+    processed_images = 0
+    
+    print("\n📁 Processing test frames...")
+    for frame in sorted(os.listdir(frame_folder)):
+        frame_path = os.path.join(frame_folder, frame)
+        try:
+            img = Image.open(frame_path).convert("RGB")
+            faces, _ = mtcnn.detect(img)
+            
+            if faces is None:
+                print(f"🔸 No faces detected in {frame}. Skipping.")
+                continue
+
+            print(f"🟢 Processing {frame} - Detected {len(faces)} face(s)")
+
+            for i, face in enumerate(faces):
+                x1, y1, x2, y2 = map(int, face)
+                face_crop = img.crop((x1, y1, x2, y2)).resize((224, 224))
+                face_path = os.path.join(output_folder, f"{frame[:-4]}_face_{i}.jpg")
+                face_crop.save(face_path)
+                processed_images += 1
+        except Exception as e:
+            print(f"❌ Error processing {frame}: {e}")
+
+    print(f"✅ Test faces extracted and saved in {output_folder}")
+    print(f"📊 Total Test Faces Saved: {processed_images}")
+
+def process_frames(input_folder, output_folder):
+    """
+    Automatically detect if this is training or testing data and process accordingly
+    """
+    # Check if this is training data (has real/fake folders)
+    if os.path.exists(os.path.join(input_folder, 'real')) and os.path.exists(os.path.join(input_folder, 'fake')):
+        print("📁 Training mode detected (real/fake folders found)")
+        os.makedirs(output_folder, exist_ok=True)
+        for category in ['real', 'fake']:
+            extract_faces_training(input_folder, output_folder, category)
+    else:
+        print("📁 Testing mode detected (processing all frames)")
+        extract_faces_testing(input_folder, output_folder)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Extract faces from frames')
+    parser.add_argument('--input', required=True, help='Input folder containing frames')
+    parser.add_argument('--output', required=True, help='Output folder for extracted faces')
+    
+    args = parser.parse_args()
+    
+    print(f"Processing frames from: {args.input}")
+    print(f"Saving faces to: {args.output}")
+    
+    process_frames(args.input, args.output)
+    print("\n✅ All frames processed!")

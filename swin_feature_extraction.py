@@ -1,7 +1,7 @@
 import torch
 from torchvision import transforms
 from timm import create_model
-from train_swin import CustomSwin
+from train_swin import CustomSwin, transform, swin_model, split_features_into_chunks
 from PIL import Image
 import os
 

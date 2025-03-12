@@ -1,10 +1,12 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchvision import transforms, datasets
+import torchvision.transforms as transforms
+import torchvision.datasets as datasets
 from torch.utils.data import DataLoader, random_split
 from timm import create_model
 import os
+import sys
 # PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0
 # ✅ Set Device (GPU if available)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -13,109 +15,158 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # if torch.backends.mps.is_available():
 #     device = torch.device("mps")
 
-# ✅ Define Swin Transformer Model (Using Pretrained Weights)
+# ✅ Define Swin Transformer Model
 class CustomSwin(nn.Module):
     def __init__(self, num_classes=2):
         super(CustomSwin, self).__init__()
-        self.swin = create_model("swin_base_patch4_window7_224", pretrained=True, num_classes=num_classes)
-
+        self.swin = create_model('swin_base_patch4_window7_224', pretrained=True)
+        self.num_features = self.swin.num_features
+        # Remove the original head
+        self.swin.head = nn.Identity()
+        # Add global average pooling and new classification head
+        self.avgpool = nn.AdaptiveAvgPool1d(1)
+        self.classifier = nn.Sequential(
+            nn.Linear(self.num_features, 512),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(512, num_classes)
+        )
+    
     def forward(self, x):
-        x = self.swin.forward_features(x)  # Shape: (batch_size, 7, 7, 1024)
-        # Apply Global Average Pooling (GAP) to reduce spatial dimensions
-        x = x.mean(dim=[1, 2])  # Now shape is (batch_size, 1024)
-        print("Swin Output Shape:", x.shape)
-        return x 
+        # Get features from Swin
+        x = self.swin.forward_features(x)
+        # Reshape and pool
+        B, _, _, C = x.shape
+        x = x.reshape(B, C, -1)  # [B, C, H*W]
+        x = self.avgpool(x)      # [B, C, 1]
+        x = x.flatten(1)         # [B, C]
+        # Classification
+        x = self.classifier(x)   # [B, num_classes]
+        return x
+
+# Initialize model
+swin_model = CustomSwin()
+
+def split_features_into_chunks(features, chunk_size=8):
+    return features.reshape(chunk_size, -1)
 
 # ✅ Data Transformations (Augmentation Added)
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
-    transforms.RandomHorizontalFlip(),  # Data Augmentation
-    transforms.RandomRotation(10),  # Prevent Overfitting
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
-# ✅ Load Dataset
-dataset = datasets.ImageFolder(root="data/extracted_faces", transform=transform)
+# TRAINING CODE - Only run this if training
+if __name__ == "__main__":
+    print(f"Using device: {device}")
+    
+    # Load dataset
+    print("Loading dataset...")
+    dataset = datasets.ImageFolder(root="data/extracted_faces", transform=transform)
+    train_size = int(0.8 * len(dataset))
+    val_size = len(dataset) - train_size
+    train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
+    
+    print(f"Total images: {len(dataset)}")
+    print(f"Training images: {len(train_dataset)}")
+    print(f"Validation images: {len(val_dataset)}")
 
-print(dataset.class_to_idx) 
+    # ✅ Use Larger Batch Size (8 is too small)
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 
-# ✅ Split into Training (80%) and Validation (20%)
-train_size = int(0.8 * len(dataset))
-val_size = len(dataset) - train_size
-train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
+    # ✅ Initialize Model
+    model = CustomSwin(num_classes=2).to(device)
+    print("Model initialized")
 
-# ✅ Use Larger Batch Size (8 is too small)
-train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
+    # ✅ Freeze Early Layers (Prevent Overfitting & Speed Up Training)
+    for name, param in model.named_parameters():
+        if "layers.0" in name or "layers.1" in name:  # Freeze first 2 layers
+            param.requires_grad = False
 
-# ✅ Initialize Model
-model = CustomSwin(num_classes=2).to(device)
+    # ✅ Define Loss & Optimizer
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.AdamW(model.parameters(), lr=3e-5)  # AdamW is better for transformers
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.5)  # Learning Rate Decay
 
-# ✅ Freeze Early Layers (Prevent Overfitting & Speed Up Training)
-for name, param in model.named_parameters():
-    if "layers.0" in name or "layers.1" in name:  # Freeze first 2 layers
-        param.requires_grad = False
+    # ✅ Training Loop with Validation & Best Model Saving
+    EPOCHS = 1
+    best_val_loss = float("inf")
+    print("\nStarting training...")
 
-# ✅ Define Loss & Optimizer
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.AdamW(model.parameters(), lr=3e-5)  # AdamW is better for transformers
-scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.5)  # Learning Rate Decay
+    for epoch in range(EPOCHS):
+        # Training Phase
+        model.train()
+        total_loss = 0
+        correct = 0
+        total = 0
 
-# ✅ Training Loop with Validation & Best Model Saving
-EPOCHS = 1
-best_val_loss = float("inf")
-
-for epoch in range(EPOCHS):
-    model.train()
-    total_loss = 0
-    correct = 0
-    total = 0
-
-    for images, labels in train_loader:
-        images, labels = images.to(device), labels.to(device)
-
-        optimizer.zero_grad()
-        outputs = model(images)
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
-
-        total_loss += loss.item()
-        _, predicted = torch.max(outputs, 1)
-        correct += (predicted == labels).sum().item()
-        total += labels.size(0)
-
-    train_accuracy = 100 * correct / total
-    print(f"Epoch [{epoch+1}/{EPOCHS}], Train Loss: {total_loss / len(train_loader):.4f}, Train Accuracy: {train_accuracy:.2f}%")
-
-    # ✅ Validation Step
-    model.eval()
-    val_loss = 0
-    correct = 0
-    total = 0
-
-    with torch.no_grad():
-        for images, labels in val_loader:
-            images, labels = images.to(device), labels.to(device)
+        for batch_idx, (images, labels) in enumerate(train_loader):
+            images = images.to(device)
+            labels = labels.to(device)
+            
+            # Debug print
+            print(f"Batch shapes - Images: {images.shape}, Labels: {labels.shape}")
+            
+            optimizer.zero_grad()
             outputs = model(images)
+            
+            # Ensure labels are the right shape
+            labels = labels.view(-1)  # Reshape to 1D tensor
+            
+            # Debug print
+            print(f"Output shape: {outputs.shape}, Labels shape: {labels.shape}")
+            
             loss = criterion(outputs, labels)
-            val_loss += loss.item()
+            loss.backward()
+            optimizer.step()
 
-            _, predicted = torch.max(outputs, 1)
-            correct += (predicted == labels).sum().item()
+            total_loss += loss.item()
+            _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
+            correct += (predicted == labels).sum().item()
 
-    val_accuracy = 100 * correct / total
-    print(f"Validation Loss: {val_loss / len(val_loader):.4f}, Validation Accuracy: {val_accuracy:.2f}%")
+            if (batch_idx + 1) % 10 == 0:
+                print(f"Epoch [{epoch+1}/{EPOCHS}], Batch [{batch_idx+1}/{len(train_loader)}], "
+                      f"Loss: {loss.item():.4f}")
 
-    scheduler.step(val_loss)  # Adjust Learning Rate Based on Validation Loss
+        train_accuracy = 100 * correct / total
+        avg_train_loss = total_loss / len(train_loader)
+        
+        # Validation Phase
+        model.eval()
+        val_loss = 0
+        correct = 0
+        total = 0
 
-    # ✅ Save Best Model (Only When Validation Loss Improves)
-    if val_loss < best_val_loss:
-        best_val_loss = val_loss
-        os.makedirs("models", exist_ok=True)
-        torch.save(model.state_dict(), "models/swin_model_best.pth")
-        print("✅ Best Model Saved!")
+        with torch.no_grad():
+            for images, labels in val_loader:
+                images, labels = images.to(device), labels.to(device)
+                outputs = model(images)
+                loss = criterion(outputs, labels)
+                val_loss += loss.item()
 
-print("✅ Training Complete!")
+                _, predicted = torch.max(outputs.data, 1)
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
+
+        val_accuracy = 100 * correct / total
+        avg_val_loss = val_loss / len(val_loader)
+
+        # Print epoch results
+        print(f"\nEpoch [{epoch+1}/{EPOCHS}]")
+        print(f"Training Loss: {avg_train_loss:.4f}, Training Accuracy: {train_accuracy:.2f}%")
+        print(f"Validation Loss: {avg_val_loss:.4f}, Validation Accuracy: {val_accuracy:.2f}%")
+
+        # Learning rate scheduling
+        scheduler.step(avg_val_loss)
+
+        # Save best model
+        if avg_val_loss < best_val_loss:
+            best_val_loss = avg_val_loss
+            os.makedirs("models", exist_ok=True)
+            torch.save(model.state_dict(), "models/swin_model_best.pth")
+            print("✅ New best model saved!")
+
+    print("\n✅ Training Complete!")
