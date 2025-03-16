@@ -80,9 +80,39 @@ class DeepfakeLSTM(nn.Module):
         output = self.fc(context)
         return torch.sigmoid(output).squeeze()
 
-def train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.001, device="cuda"):
+class EarlyStopping:
+    def __init__(self, patience=7, min_delta=0, verbose=True):
+        """
+        Early stopping to stop training when validation loss doesn't improve for a given patience.
+        
+        Args:
+            patience (int): Number of epochs to wait before stopping (default: 7)
+            min_delta (float): Minimum change in monitored value to qualify as an improvement (default: 0)
+            verbose (bool): Whether to print messages (default: True)
+        """
+        self.patience = patience
+        self.min_delta = min_delta
+        self.verbose = verbose
+        self.counter = 0
+        self.best_loss = None
+        self.early_stop = False
+        
+    def __call__(self, val_loss):
+        if self.best_loss is None:
+            self.best_loss = val_loss
+        elif val_loss > self.best_loss - self.min_delta:
+            self.counter += 1
+            if self.verbose:
+                print(f'Early stopping counter: {self.counter} out of {self.patience}')
+            if self.counter >= self.patience:
+                self.early_stop = True
+        else:
+            self.best_loss = val_loss
+            self.counter = 0
+            
+def train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.001, device="cuda", patience=7):
     """
-    Train the LSTM model.
+    Train the LSTM model with early stopping.
     
     Args:
         model (DeepfakeLSTM): The LSTM model
@@ -91,10 +121,14 @@ def train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.
         num_epochs (int): Number of training epochs
         learning_rate (float): Learning rate
         device (str): Device to train on ("cuda" or "cpu")
+        patience (int): Number of epochs to wait before early stopping
     """
     criterion = nn.BCELoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=5, factor=0.5)
+    
+    # Initialize early stopping
+    early_stopping = EarlyStopping(patience=patience, verbose=True)
     
     best_val_loss = float('inf')
     best_model_state = None
@@ -150,6 +184,9 @@ def train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.
         # Learning rate scheduling
         scheduler.step(val_loss)
         
+        # Early stopping check
+        early_stopping(val_loss)
+        
         # Save best model
         if val_loss < best_val_loss:
             best_val_loss = val_loss
@@ -158,6 +195,11 @@ def train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.
             print("✓ Saved best model checkpoint")
         
         print("-" * 50)
+        
+        # If early stopping triggered, break the training loop
+        if early_stopping.early_stop:
+            print("Early stopping triggered")
+            break
     
     return best_model_state
 
@@ -182,14 +224,15 @@ def main():
     # Initialize model
     model = DeepfakeLSTM().to(device)
     
-    # Train model
+    # Train model with early stopping
     best_model_state = train_model(
         model=model,
         train_loader=train_loader,
         val_loader=val_loader,
         num_epochs=50,
         learning_rate=0.001,
-        device=device
+        device=device,
+        patience=7  # Early stopping patience
     )
     
     print("Training completed!")
