@@ -113,10 +113,10 @@ data/train_faces/
 
 ### **2. Train the Swin Model**
 
-Run the training script:
+Run the training script:NO need of train_faces 
 
 ```bash
-python train_swim.py
+python train_swin.py
 ```
 
 This will train the Swin Transformer and save the model weights to:
