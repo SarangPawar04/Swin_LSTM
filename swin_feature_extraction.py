@@ -1,27 +1,25 @@
 import torch
-from torchvision import transforms
-from timm import create_model
-from train_swin import CustomSwin, transform, swin_model, split_features_into_chunks
+import torchvision.transforms as transforms
 from PIL import Image
 import os
+from timm import create_model
+import argparse
 
-# Load trained Swin model
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-swin_model = create_model("swin_base_patch4_window7_224", num_classes=2, pretrained=False)
-#swin_model = CustomSwin(num_classes=2)
-swin_model.head = torch.nn.Identity()
-swin_model.load_state_dict(torch.load("models/swin_model_best.pth"), strict=False)
-swin_model.eval().to(device)
+# Initialize Swin Transformer model
+swin_model = create_model('swin_base_patch4_window7_224', pretrained=True)
+swin_model.head = torch.nn.Identity()  # Remove classification head
+swin_model.eval()
 
-# Constants for feature chunking
-NUM_CHUNKS = 8
-CHUNK_SIZE = 128  # 1024 // 8 = 128
-
+# Define image transformations
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
+
+# Constants for feature chunking
+NUM_CHUNKS = 8
+CHUNK_SIZE = 128  # 1024 // 8 = 128
 
 def split_features_into_chunks(features):
     """
@@ -35,70 +33,109 @@ def split_features_into_chunks(features):
     """
     return features.reshape(NUM_CHUNKS, CHUNK_SIZE)
 
-def extract_and_save_features(face_folder, feature_output_folder):
+def extract_features(input_dir, output_dir, is_test=False):
     """
-    Extract features for real and fake faces and store them in a single file per category.
-    Features are split into 8 chunks of 128 dimensions each to create a sequence-like structure.
-
-    Parameters:
-        face_root_folder (str): Path to extracted faces (should contain 'real/' and 'fake/')
-        feature_output_folder (str): Path where extracted features will be saved
-    """
-    # Create output directory if it doesn't exist
-    os.makedirs(feature_output_folder, exist_ok=True)
-
-    # Skip hidden files like .DS_Store
-    categories = [f for f in sorted(os.listdir(face_folder)) if not f.startswith('.')]
+    Extract features from face images using Swin Transformer.
     
-    for category in categories:
-        category_folder = os.path.join(face_folder, category)
+    Args:
+        input_dir (str): Directory containing face images
+        output_dir (str): Directory to save extracted features
+        is_test (bool): Whether processing test data
+    """
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    swin_model.to(device)
+    
+    # Create output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Process images
+    features_list = []
+    image_extensions = ('.jpg', '.jpeg', '.png')
+    
+    # If test data, process all images in the input directory
+    if is_test:
+        for img_name in sorted(os.listdir(input_dir)):
+            if img_name.lower().endswith(image_extensions):
+                img_path = os.path.join(input_dir, img_name)
+                try:
+                    # Load and preprocess image
+                    img = Image.open(img_path).convert('RGB')
+                    img_tensor = transform(img).unsqueeze(0).to(device)
+                    
+                    # Extract features
+                    with torch.no_grad():
+                        features = swin_model.forward_features(img_tensor)
+                        if features.dim() == 4:
+                            features = features.mean(dim=[1, 2])  # GAP
+                        
+                        # Split features into chunks
+                        feature_tensor = features.squeeze()
+                        chunked_features = split_features_into_chunks(feature_tensor)
+                    
+                    features_list.append(chunked_features)
+                    print(f"✓ Processed {img_name}")
+                    
+                except Exception as e:
+                    print(f"❌ Error processing {img_name}: {str(e)}")
+                    continue
         
-        # Skip if not a directory
-        if not os.path.isdir(category_folder):
-            print(f"⚠️ Skipping non-directory: {category_folder}")
-            continue
-            
-        all_features = []
-        # Skip hidden files in the category folder
-        faces = [f for f in sorted(os.listdir(category_folder)) if not f.startswith('.')]
-
-        for face in faces:
-            face_path = os.path.join(category_folder, face)
-            
-            if not os.path.isfile(face_path):
-                print(f"⚠️ Skipping non-file: {face_path}")
+        if features_list:
+            # Stack all chunked features
+            all_features = torch.stack(features_list)
+            output_file = os.path.join(output_dir, "test_features.pt")
+            torch.save(all_features, output_file)
+            print(f"\n✅ Features saved for test data in {output_file}")
+    
+    # If training data, process real and fake directories separately
+    else:
+        for class_name in ['real', 'fake']:
+            class_dir = os.path.join(input_dir, class_name)
+            if not os.path.exists(class_dir):
+                print(f"⚠️ Directory not found: {class_dir}")
                 continue
+            
+            features_list = []
+            for img_name in sorted(os.listdir(class_dir)):
+                if img_name.lower().endswith(image_extensions):
+                    img_path = os.path.join(class_dir, img_name)
+                    try:
+                        # Load and preprocess image
+                        img = Image.open(img_path).convert('RGB')
+                        img_tensor = transform(img).unsqueeze(0).to(device)
+                        
+                        # Extract features
+                        with torch.no_grad():
+                            features = swin_model.forward_features(img_tensor)
+                            if features.dim() == 4:
+                                features = features.mean(dim=[1, 2])  # GAP
+                            
+                            # Split features into chunks
+                            feature_tensor = features.squeeze()
+                            chunked_features = split_features_into_chunks(feature_tensor)
+                        
+                        features_list.append(chunked_features)
+                        print(f"✓ Processed {class_name}/{img_name}")
+                        
+                    except Exception as e:
+                        print(f"❌ Error processing {class_name}/{img_name}: {str(e)}")
+                        continue
+            
+            if features_list:
+                # Stack all chunked features
+                all_features = torch.stack(features_list)
+                output_file = os.path.join(output_dir, f"{class_name}.pt")
+                torch.save(all_features, output_file)
+                print(f"\n✅ Features saved for {class_name} in {output_file}")
 
-            try:
-                img = Image.open(face_path).convert("RGB")
-                img = transform(img).unsqueeze(0).to(device)
-
-                with torch.no_grad():
-                    features = swin_model.forward_features(img)
-                    if features.dim() == 4:
-                        features = features.mean(dim=[1, 2])  # GAP
-
-                feature_tensor = features.squeeze()
-                # Split features into chunks
-                chunked_features = split_features_into_chunks(feature_tensor)
-                print(f"✓ Processed {face} - Original shape: {feature_tensor.shape}, Chunked shape: {chunked_features.shape}")
-                all_features.append(chunked_features)
-                
-            except Exception as e:
-                print(f"❌ Error processing {face_path}: {str(e)}")
-                continue
-
-        if not all_features:  # Prevent error when saving
-            print(f"❌ No features found for {category}, skipping save.")
-            continue
-
-        # Stack all chunked features
-        # Final shape will be (num_samples, num_chunks, chunk_size)
-        stacked_features = torch.stack(all_features)
-        output_path = os.path.join(feature_output_folder, f"{category}.pt")
-        torch.save(stacked_features, output_path)
-        print(f"✅ Features saved for {category} in {output_path} with shape {stacked_features.shape}")
-
-
-# Example Usage
-extract_and_save_features("data/extracted_faces/", "dataset/extracted_features/")
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Extract features using Swin Transformer')
+    parser.add_argument('--input', required=True, help='Input directory containing face images')
+    parser.add_argument('--output', required=True, help='Output directory to save features')
+    parser.add_argument('--test', action='store_true', help='Process test data')
+    
+    args = parser.parse_args()
+    
+    try:
+        extract_features(args.input, args.output, args.test)
+    except Exception as e:
+        print(f"❌ Error: {str(e)}")
