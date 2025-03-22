@@ -5,7 +5,7 @@ from pathlib import Path
 def create_directories():
     """Create necessary directories for testing."""
     directories = [
-        'data/videos/test',
+        'data/videos/test_vids',
         'data/test_frames',
         'data/test_faces',
         'dataset/test_features',
@@ -38,12 +38,12 @@ def main():
     test_dir = "data/videos/test"
     if not os.path.exists(test_dir) or not os.listdir(test_dir):
         print(f"❌ Error: No test videos found in {test_dir}")
-        print("Please place test videos in data/videos/test/ directory")
+        print("Please place test videos in data/videos/test_vids/ directory")
         return
     
     # Step 2: Extract frames from test videos
     if not run_command(
-        "python extract_frames.py --input data/videos/test --output data/test_frames",
+        "python extract_frames.py --input data/videos/test_vids --output data/test_frames",
         "Extracting frames from test videos"
     ):
         return

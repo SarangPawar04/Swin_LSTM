@@ -1,9 +1,0 @@
-{
-    "timestamp": "2025-03-19 22:28:21",
-    "model_path": "models/lstm_model_best.pth",
-    "predictions": {
-        "total_samples": 73,
-        "predicted_real": 0,
-        "predicted_fake": 73
-    }
-}
