@@ -5,80 +5,8 @@ from torch.utils.data import Dataset, DataLoader
 import os
 import numpy as np
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
-
-class DeepfakeFeatureDataset(Dataset):
-    def __init__(self, feature_dir):
-        """
-        Dataset class for loading chunked features.
-        
-        Args:
-            feature_dir (str): Directory containing the feature files (real.pt and fake.pt)
-        """
-        self.real_features = torch.load(os.path.join(feature_dir, "real.pt"))
-        self.fake_features = torch.load(os.path.join(feature_dir, "fake.pt"))
-        
-        # Create labels (1 for real, 0 for fake)
-        self.real_labels = torch.ones(len(self.real_features))
-        self.fake_labels = torch.zeros(len(self.fake_features))
-        
-        # Combine features and labels
-        self.features = torch.cat([self.real_features, self.fake_features], dim=0)
-        self.labels = torch.cat([self.real_labels, self.fake_labels], dim=0)
-        
-    def __len__(self):
-        return len(self.features)
-    
-    def __getitem__(self, idx):
-        return self.features[idx], self.labels[idx]
-
-class DeepfakeLSTM(nn.Module):
-    def __init__(self, input_size=128, hidden_size=256, num_layers=2, dropout=0.5):
-        """
-        LSTM model for deepfake detection using chunked features.
-        
-        Args:
-            input_size (int): Size of each feature chunk (default: 128)
-            hidden_size (int): Number of features in the hidden state (default: 256)
-            num_layers (int): Number of recurrent layers (default: 2)
-            dropout (float): Dropout rate (default: 0.5)
-        """
-        super(DeepfakeLSTM, self).__init__()
-        
-        self.lstm = nn.LSTM(
-            input_size=input_size,
-            hidden_size=hidden_size,
-            num_layers=num_layers,
-            batch_first=True,
-            dropout=dropout if num_layers > 1 else 0,
-            bidirectional=True
-        )
-        
-        self.attention = nn.Sequential(
-            nn.Linear(hidden_size * 2, 1),
-            nn.Tanh()
-        )
-        
-        self.fc = nn.Sequential(
-            nn.Linear(hidden_size * 2, hidden_size),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(hidden_size, 1)
-        )
-        
-    def forward(self, x):
-        # x shape: (batch_size, num_chunks, chunk_size)
-        lstm_out, _ = self.lstm(x)  # lstm_out: (batch_size, num_chunks, hidden_size*2)
-        
-        # Attention mechanism
-        attention_weights = self.attention(lstm_out)  # (batch_size, num_chunks, 1)
-        attention_weights = torch.softmax(attention_weights, dim=1)
-        
-        # Apply attention weights
-        context = torch.sum(attention_weights * lstm_out, dim=1)  # (batch_size, hidden_size*2)
-        
-        # Final classification
-        output = self.fc(context)
-        return torch.sigmoid(output).squeeze()
+import matplotlib.pyplot as plt
+from lstm_model import DeepfakeLSTM, DeepfakeFeatureDataset
 
 class EarlyStopping:
     def __init__(self, patience=7, min_delta=0, verbose=True):
@@ -110,6 +38,36 @@ class EarlyStopping:
             self.best_loss = val_loss
             self.counter = 0
             
+def plot_training_history(history, save_dir='results'):
+    """Plot and save training history."""
+    os.makedirs(save_dir, exist_ok=True)
+    
+    # Create figure with two subplots
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12))
+    
+    # Plot loss
+    ax1.plot(history['train_loss'], label='Training Loss')
+    ax1.plot(history['val_loss'], label='Validation Loss')
+    ax1.set_title('Model Loss')
+    ax1.set_xlabel('Epoch')
+    ax1.set_ylabel('Loss')
+    ax1.legend()
+    ax1.grid(True)
+    
+    # Plot accuracy
+    ax2.plot(history['train_acc'], label='Training Accuracy')
+    ax2.plot(history['val_acc'], label='Validation Accuracy')
+    ax2.set_title('Model Accuracy')
+    ax2.set_xlabel('Epoch')
+    ax2.set_ylabel('Accuracy')
+    ax2.legend()
+    ax2.grid(True)
+    
+    # Adjust layout and save
+    plt.tight_layout()
+    plt.savefig(os.path.join(save_dir, 'training_history.png'))
+    plt.close()
+
 def train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.001, device="cuda", patience=7):
     """
     Train the LSTM model with early stopping.
@@ -132,6 +90,12 @@ def train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.
     
     best_val_loss = float('inf')
     best_model_state = None
+    
+    # Initialize history dictionary
+    history = {
+        'train_loss': [], 'train_acc': [],
+        'val_loss': [], 'val_acc': []
+    }
     
     for epoch in range(num_epochs):
         # Training phase
@@ -176,6 +140,12 @@ def train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.
         train_acc = accuracy_score(train_labels, train_preds)
         val_acc = accuracy_score(val_labels, val_preds)
         
+        # Update history
+        history['train_loss'].append(train_loss)
+        history['train_acc'].append(train_acc)
+        history['val_loss'].append(val_loss)
+        history['val_acc'].append(val_acc)
+        
         # Print progress
         print(f"Epoch [{epoch+1}/{num_epochs}]")
         print(f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}")
@@ -201,6 +171,9 @@ def train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.
             print("Early stopping triggered")
             break
     
+    # Plot and save training history
+    plot_training_history(history)
+    
     return best_model_state
 
 def main():
@@ -224,7 +197,7 @@ def main():
     # Initialize model
     model = DeepfakeLSTM().to(device)
     
-    # Train model with early stopping
+    # Train model
     best_model_state = train_model(
         model=model,
         train_loader=train_loader,
@@ -236,6 +209,7 @@ def main():
     )
     
     print("Training completed!")
+    print("Training history plot saved as 'results/training_history.png'")
 
 if __name__ == "__main__":
     main()

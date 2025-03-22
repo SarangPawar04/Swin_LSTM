@@ -1,0 +1,16 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Python files
+*.py text diff=python
+
+# Documentation
+*.md text diff=markdown
+
+# JSON files
+*.json text
+
+# Force specific files to use LF
+*.py text eol=lf
+*.md text eol=lf
+*.json text eol=lf 
