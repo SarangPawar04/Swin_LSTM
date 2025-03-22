@@ -61,6 +61,7 @@ def evaluate_model(model_path="models/lstm_model_best.pth", features_dir="datase
         predictions = lstm_model(test_features)
         predicted_labels = (predictions >= 0.5).long()
     
+
     # Calculate metrics
     # Assuming first half of test data is real (0) and second half is fake (1)
     num_samples = len(predicted_labels)
