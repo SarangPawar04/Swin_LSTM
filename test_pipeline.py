@@ -35,7 +35,7 @@ def main():
     create_directories()
     
     # Check if test videos exist
-    test_dir = "data/videos/test"
+    test_dir = "data/videos/test_vids"
     if not os.path.exists(test_dir) or not os.listdir(test_dir):
         print(f"❌ Error: No test videos found in {test_dir}")
         print("Please place test videos in data/videos/test_vids/ directory")
