@@ -168,6 +168,98 @@ The DeepfakeLSTM model includes:
 
 ## **Results Format**
 
+### **Training History** (`results/training_history.png`)
+The training process generates a plot showing the model's learning progress over time:
+- Top subplot: Training and validation loss curves
+- Bottom subplot: Training and validation accuracy curves
+- Helps visualize model convergence and potential overfitting
+=======
+
+2. Place your test videos:
+   - Test videos in `data/videos/test/`
+
+### **Step 2: Run the Training Pipeline**
+
+Simply run the training pipeline with a single command:
+```bash
+python train_pipeline.py
+```
+
+This single command will automatically handle the entire training process:
+1. Create all necessary directories
+2. Extract frames from training videos
+3. Extract faces from frames
+4. Fine-tune Swin Transformer model
+   - Starts from pretrained weights
+   - Adapts to deepfake detection task
+   - Saves as `swin_model_custom.pth`
+5. Extract features using fine-tuned Swin Transformer
+   - Features are split into 8 chunks of 128 dimensions each
+   - Training features are saved separately as `real.pt` and `fake.pt`
+6. Train the LSTM model
+   - Uses attention mechanism for better feature focus
+   - Saves best model as `lstm_model_best.pth`
+
+### **Step 3: Run the Testing Pipeline**
+
+Execute the testing pipeline:
+```bash
+python test_pipeline.py
+```
+
+This will automatically:
+1. Create necessary test directories
+2. Extract frames from test videos
+3. Extract faces from test frames
+4. Extract features using Swin Transformer
+   - Test features are processed in the same 8x128 chunk format
+   - Saved as a single `test_features.pt` file
+5. Run deepfake detection on test faces
+6. Evaluate model performance
+
+Results will be saved in the `results/` directory:
+- Detection results: `results/detection_results_*.json`
+- Evaluation results: `results/evaluation_results_*.json`
+
+---
+
+## **Technical Details**
+
+### **Feature Extraction**
+
+The Swin Transformer extracts 1024-dimensional features from each face image, which are then:
+- Split into 8 chunks of 128 features each
+- Processed sequentially by the LSTM
+- This chunking allows the model to focus on different aspects of the face
+
+### **LSTM Architecture**
+
+The DeepfakeLSTM model includes:
+- Input size: 128 (chunk size)
+- Hidden size: 256
+- Number of layers: 2
+- Bidirectional processing
+- Attention mechanism for better feature focus
+- Dropout for regularization
+
+### **Training Process**
+
+- Early stopping to prevent overfitting
+- Learning rate scheduling
+- Best model checkpoint saving
+- Separate validation set for model selection
+
+### **Testing Process**
+
+- Unified feature processing for test data
+- Confidence scores for each prediction
+- Comprehensive evaluation metrics
+- Detailed results logging
+
+---
+
+## **Results Format**
+
 ### **Detection Results** (`detection_results_*.json`)
 ```json
 {
@@ -235,3 +327,6 @@ The DeepfakeLSTM model includes:
 ## **License**
 This project is open-source and free to use.
 
+
+### **Detection Results** (`detection_results_*.json`)
+```

@@ -61,6 +61,32 @@ def evaluate_model(model_path="models/lstm_model_best.pth", features_dir="datase
         predictions = lstm_model(test_features)
         predicted_labels = (predictions >= 0.5).long()
     
+
+    # Calculate metrics
+    # Assuming first half of test data is real (0) and second half is fake (1)
+    num_samples = len(predicted_labels)
+    true_labels = torch.cat([
+        torch.zeros(num_samples // 2),
+        torch.ones(num_samples - num_samples // 2)
+    ]).to(device)
+    
+    # Convert to numpy for sklearn metrics
+    predicted_labels_np = predicted_labels.cpu().numpy()
+    true_labels_np = true_labels.cpu().numpy()
+    
+    # Calculate metrics
+    accuracy = accuracy_score(true_labels_np, predicted_labels_np)
+    precision = precision_score(true_labels_np, predicted_labels_np)
+    recall = recall_score(true_labels_np, predicted_labels_np)
+    f1 = f1_score(true_labels_np, predicted_labels_np)
+    
+    # Print metrics
+    print("\n📊 Model Performance Metrics:")
+    print(f"Accuracy:  {accuracy:.4f}")
+    print(f"Precision: {precision:.4f}")
+    print(f"Recall:    {recall:.4f}")
+    print(f"F1-Score:  {f1:.4f}")
+    
     # Print predictions summary
     print(f"\n📊 Predictions Summary:")
     print(f"Total samples: {len(predicted_labels)}")
@@ -71,6 +97,12 @@ def evaluate_model(model_path="models/lstm_model_best.pth", features_dir="datase
     results = {
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "model_path": model_path,
+        "metrics": {
+            "accuracy": float(accuracy),
+            "precision": float(precision),
+            "recall": float(recall),
+            "f1_score": float(f1)
+        },
         "predictions": {
             "total_samples": len(predicted_labels),
             "predicted_real": (predicted_labels == 0).sum().item(),
