@@ -8,11 +8,18 @@ def extract_frames(video_path, output_folder, frame_rate=5, is_test=False):
     """
     if is_test:
         # For test videos, save directly to output folder
+        print(  "testing vidoe path : ",video_path.lower())
+        # os.makedirs(output_folder, exist_ok=True)
+        # frame_prefix = "frame"
+        label = "real" if "real" in video_path.lower() else "fake"
+        print(video_path.lower())
+        output_folder = os.path.join(output_folder, label)
         os.makedirs(output_folder, exist_ok=True)
-        frame_prefix = "frame"
+        frame_prefix = f"frame_{label}"
     else:
         # For training videos, use real/fake folders
         label = "real" if "real" in video_path.lower() else "fake"
+        print(video_path.lower())
         output_folder = os.path.join(output_folder, label)
         os.makedirs(output_folder, exist_ok=True)
         frame_prefix = f"frame_{label}"

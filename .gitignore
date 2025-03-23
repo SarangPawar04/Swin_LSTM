@@ -30,6 +30,6 @@ data/train_faces/
 data/videos/
 dataset/extracted_features/
 models/*.pth
-
+data/*
 # Results
 results.txt
