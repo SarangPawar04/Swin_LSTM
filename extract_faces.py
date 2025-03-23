@@ -49,6 +49,7 @@ def extract_faces_testing(frame_folder, output_folder):
     """
     Extract faces for testing data (no categories)
     """
+    print("running testing one")
     os.makedirs(output_folder, exist_ok=True)
     processed_images = 0
     

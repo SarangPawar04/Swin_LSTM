@@ -63,7 +63,10 @@ if __name__ == "__main__":
     
     # Load dataset
     print("Loading dataset...")
+    #ImageFolder dataset, which automatically assigns labels based on the directory structure.
     dataset = datasets.ImageFolder(root="data/extracted_faces", transform=transform)
+    #dataset variable contains all the images and their corresponding labels.
+    print(dataset.class_to_idx)
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
     train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
@@ -91,7 +94,7 @@ if __name__ == "__main__":
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.5)  # Learning Rate Decay
 
     # ✅ Training Loop with Validation & Best Model Saving
-    EPOCHS = 1
+    EPOCHS = 50
     best_val_loss = float("inf")
     print("\nStarting training...")
 
