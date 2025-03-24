@@ -8,7 +8,8 @@ def extract_frames(video_path, output_folder, frame_rate=5, is_test=False):
     """
     video_name = os.path.splitext(os.path.basename(video_path))[0]  # Get video name without extension
     if is_test:
-        output_folder = os.path.join(output_folder, video_name)
+        #frames extracted in video specific folders.
+        output_folder = os.path.join(output_folder, video_name) 
         os.makedirs(output_folder, exist_ok=True)
         frame_prefix = "frame"
     else:
@@ -16,7 +17,7 @@ def extract_frames(video_path, output_folder, frame_rate=5, is_test=False):
         label = "real" if "real" in video_path.lower() else "fake"
         output_folder = os.path.join(output_folder, label)
         os.makedirs(output_folder, exist_ok=True)
-        frame_prefix = f"frame_{label}"
+        frame_prefix = f"frame_{label}_{video_name}"
 
     cap = cv2.VideoCapture(video_path)
     frame_count = 0
