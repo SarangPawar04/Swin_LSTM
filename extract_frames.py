@@ -6,24 +6,17 @@ def extract_frames(video_path, output_folder, frame_rate=5, is_test=False):
     """
     Extracts frames from a video at a specified frame rate.
     """
-    # Get video name without extension
-    video_name = os.path.splitext(os.path.basename(video_path))[0]
-    
+    video_name = os.path.splitext(os.path.basename(video_path))[0]  # Get video name without extension
     if is_test:
-        # For test videos, save directly to output folder
-        print("testing video path : ", video_path.lower())
-        label = "real" if "real" in video_path.lower() else "fake"
-        print(video_path.lower())
-        output_folder = os.path.join(output_folder, label)
+        output_folder = os.path.join(output_folder, video_name)
         os.makedirs(output_folder, exist_ok=True)
-        frame_prefix = f"frame_{label}_{video_name}"
+        frame_prefix = "frame"
     else:
         # For training videos, use real/fake folders
         label = "real" if "real" in video_path.lower() else "fake"
-        print(video_path.lower())
         output_folder = os.path.join(output_folder, label)
         os.makedirs(output_folder, exist_ok=True)
-        frame_prefix = f"frame_{label}_{video_name}"
+        frame_prefix = f"frame_{label}"
 
     cap = cv2.VideoCapture(video_path)
     frame_count = 0
@@ -32,7 +25,10 @@ def extract_frames(video_path, output_folder, frame_rate=5, is_test=False):
 
     while success:
         if frame_count % frame_rate == 0:
-            frame_filename = os.path.join(output_folder, f"{frame_prefix}_{frame_count}.jpg")
+            if is_test:
+                frame_filename = os.path.join(output_folder, f"{frame_prefix}_{frame_count}.jpg")
+            else:
+                frame_filename = os.path.join(output_folder, f"{frame_prefix}_{frame_count}.jpg")
             cv2.imwrite(frame_filename, frame)
             saved_count += 1
         success, frame = cap.read()
@@ -96,4 +92,3 @@ if __name__ == "__main__":
     
     process_videos(args.input, args.output, args.frame_rate)
     print("\n✅ All videos processed!")
-

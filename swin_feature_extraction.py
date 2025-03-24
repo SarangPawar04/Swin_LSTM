@@ -5,9 +5,21 @@ import os
 from timm import create_model
 import argparse
 
+# Detect device (MPS for Mac M2, CUDA for GPUs, else CPU)
+device = torch.device("mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
+
 # Initialize Swin Transformer model
 swin_model = create_model('swin_base_patch4_window7_224', pretrained=True)
 swin_model.head = torch.nn.Identity()  # Remove classification head
+
+# Load fine-tuned model weights
+model_path = "models/swin_model_best.pth"
+if os.path.exists(model_path):
+    swin_model.load_state_dict(torch.load(model_path, map_location=device), strict=False)
+    print(f"✅ Loaded fine-tuned model weights from {model_path}")
+else:
+    print(f"⚠️ Warning: Fine-tuned model weights not found! Using default pretrained model.")
+
 swin_model.eval()
 
 # Define image transformations
@@ -42,7 +54,7 @@ def extract_features(input_dir, output_dir, is_test=False):
         output_dir (str): Directory to save extracted features
         is_test (bool): Whether processing test data
     """
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
     swin_model.to(device)
     
     # Create output directory if it doesn't exist
@@ -52,39 +64,45 @@ def extract_features(input_dir, output_dir, is_test=False):
     features_list = []
     image_extensions = ('.jpg', '.jpeg', '.png')
     
-    # If test data, process all images in the input directory
+    # If test data process videowise faces
     if is_test:
-        for img_name in sorted(os.listdir(input_dir)):
-            if img_name.lower().endswith(image_extensions):
-                img_path = os.path.join(input_dir, img_name)
-                try:
-                    # Load and preprocess image
-                    img = Image.open(img_path).convert('RGB')
-                    img_tensor = transform(img).unsqueeze(0).to(device)
-                    
-                    # Extract features
-                    with torch.no_grad():
-                        features = swin_model.forward_features(img_tensor)
-                        if features.dim() == 4:
-                            features = features.mean(dim=[1, 2])  # GAP
+        for video_name in sorted(os.listdir(input_dir)):
+            video_path = os.path.join(input_dir, video_name)
+            if not os.path.isdir(video_path):  
+                continue  # Skip if not a directory (ignore stray files)
+            features_list = []
+
+            for img_name in sorted(os.listdir(video_path)):
+                if img_name.lower().endswith(image_extensions):
+                    img_path = os.path.join(video_path, img_name)
+                    try:
+                        # Load and preprocess image
+                        img = Image.open(img_path).convert('RGB')
+                        img_tensor = transform(img).unsqueeze(0).to(device)
                         
-                        # Split features into chunks
-                        feature_tensor = features.squeeze()
-                        chunked_features = split_features_into_chunks(feature_tensor)
-                    
-                    features_list.append(chunked_features)
-                    print(f"✓ Processed {img_name}")
-                    
-                except Exception as e:
-                    print(f"❌ Error processing {img_name}: {str(e)}")
-                    continue
-        
-        if features_list:
-            # Stack all chunked features
-            all_features = torch.stack(features_list)
-            output_file = os.path.join(output_dir, "test_features.pt")
-            torch.save(all_features, output_file)
-            print(f"\n✅ Features saved for test data in {output_file}")
+                        # Extract features
+                        with torch.no_grad():
+                            features = swin_model.forward_features(img_tensor)
+                            if features.dim() == 4:
+                                features = features.mean(dim=[1, 2])  # GAP
+                            
+                            # Split features into chunks
+                            feature_tensor = features.squeeze()
+                            chunked_features = split_features_into_chunks(feature_tensor)
+                        
+                        features_list.append(chunked_features)
+                        print(f"✓ Processed {img_name}")
+                        
+                    except Exception as e:
+                        print(f"❌ Error processing {img_name}: {str(e)}")
+                        continue
+            
+            if features_list:
+                # Stack all chunked features
+                all_features = torch.stack(features_list)
+                output_file = os.path.join(output_dir, f"{video_name}.pt")
+                torch.save(all_features, output_file)
+                print(f"\n✅ Features saved for test data in {output_file}")
     
     # If training data, process real and fake directories separately
     else:
@@ -129,7 +147,7 @@ def extract_features(input_dir, output_dir, is_test=False):
 
 class SwinFeatureExtractor:
     def __init__(self):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
         self.model = swin_model.to(self.device)
         self.model.eval()
     

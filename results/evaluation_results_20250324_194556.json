@@ -1,0 +1,19 @@
+{
+    "timestamp": "2025-03-24 19:45:56",
+    "model_path": "models/lstm_model_best.pth",
+    "metrics": {
+        "accuracy": 0.1595744680851064,
+        "precision": 0.21929824561403508,
+        "recall": 0.26595744680851063,
+        "f1_score": 0.2403846153846154
+    },
+    "predictions": {
+        "total_samples": 188,
+        "predicted_real": 74,
+        "predicted_fake": 114
+    },
+    "processed_videos": [
+        "test_00.pt",
+        "test_01.pt"
+    ]
+}

@@ -7,11 +7,11 @@ import os
 
 def evaluate_model(model_path="models/lstm_model_best.pth", features_dir="dataset/test_features", output_dir="results"):
     """
-    Evaluate the model's performance on test data.
+    Evaluate the model's performance on test data using video-wise features.
     
     Args:
         model_path (str): Path to the trained LSTM model
-        features_dir (str): Directory containing test features
+        features_dir (str): Directory containing video-wise test features
         output_dir (str): Directory to save evaluation results
     """
     print("\n🔍 Starting Model Evaluation...")
@@ -42,18 +42,28 @@ def evaluate_model(model_path="models/lstm_model_best.pth", features_dir="datase
     if not os.path.exists(features_dir):
         raise FileNotFoundError(f"Features directory not found: {features_dir}")
     
-    # Load test features
+    # Load test features from multiple video-wise files
     print("Loading test features...")
-    try:
-        # Load test features from single file
-        features_path = os.path.join(features_dir, "test_features.pt")
-        if not os.path.exists(features_path):
-            raise FileNotFoundError(f"Test features file not found: {features_path}")
-            
-        test_features = torch.load(features_path).to(device)
-        print("✓ Test features loaded successfully")
-    except Exception as e:
-        raise Exception(f"Error loading test features: {str(e)}")
+    test_features_list = []
+    video_names = []
+
+    for filename in sorted(os.listdir(features_dir)):
+        if filename.endswith(".pt"):
+            video_path = os.path.join(features_dir, filename)
+            try:
+                features = torch.load(video_path).to(device)  # Load tensor
+                test_features_list.append(features)
+                video_names.append(filename)
+                print(f"✓ Loaded {filename}")
+            except Exception as e:
+                print(f"❌ Error loading {filename}: {str(e)}")
+    
+    if not test_features_list:
+        raise FileNotFoundError("No test feature files found in the directory!")
+
+    # Stack all test feature tensors
+    test_features = torch.cat(test_features_list, dim=0)  # Combine all videos
+    print(f"Total test samples: {test_features.shape[0]}")
     
     # Perform inference
     print("\nRunning inference...")
@@ -61,9 +71,7 @@ def evaluate_model(model_path="models/lstm_model_best.pth", features_dir="datase
         predictions = lstm_model(test_features)
         predicted_labels = (predictions >= 0.5).long()
     
-
-    # Calculate metrics
-    # Assuming first half of test data is real (0) and second half is fake (1)
+    # Generate true labels based on number of samples
     num_samples = len(predicted_labels)
     true_labels = torch.cat([
         torch.zeros(num_samples // 2),
@@ -107,7 +115,8 @@ def evaluate_model(model_path="models/lstm_model_best.pth", features_dir="datase
             "total_samples": len(predicted_labels),
             "predicted_real": (predicted_labels == 0).sum().item(),
             "predicted_fake": (predicted_labels == 1).sum().item()
-        }
+        },
+        "processed_videos": video_names
     }
     
     # Save results to JSON
@@ -115,7 +124,7 @@ def evaluate_model(model_path="models/lstm_model_best.pth", features_dir="datase
     with open(output_file, 'w') as f:
         json.dump(results, f, indent=4)
     
-    print(f"\nDetailed results saved to: {output_file}")
+    print(f"\n✅ Detailed results saved to: {output_file}")
     
     return results
 

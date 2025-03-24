@@ -47,36 +47,48 @@ def extract_faces_training(frame_folder, output_folder, category):
 
 def extract_faces_testing(frame_folder, output_folder):
     """
-    Extract faces for testing data (no categories)
+    Extract faces for testing data (store in video-wise folders)
     """
-    print("running testing one")
     os.makedirs(output_folder, exist_ok=True)
     processed_images = 0
     
     print("\n📁 Processing test frames...")
-    for frame in sorted(os.listdir(frame_folder)):
-        frame_path = os.path.join(frame_folder, frame)
-        try:
-            img = Image.open(frame_path).convert("RGB")
-            faces, _ = mtcnn.detect(img)
-            
-            if faces is None:
-                print(f"🔸 No faces detected in {frame}. Skipping.")
-                continue
+    # Iterate over extracted frames (which are video-wise stored)
+    for video_name in sorted(os.listdir(frame_folder)):
+        video_frame_path = os.path.join(frame_folder, video_name)
+        if not os.path.isdir(video_frame_path):
+            continue  # Skip non-folder items
 
-            print(f"🟢 Processing {frame} - Detected {len(faces)} face(s)")
+        video_output_folder = os.path.join(output_folder, video_name)  # ✅ Create folder for each video
+        os.makedirs(video_output_folder, exist_ok=True)
 
-            for i, face in enumerate(faces):
-                x1, y1, x2, y2 = map(int, face)
-                face_crop = img.crop((x1, y1, x2, y2)).resize((224, 224))
-                face_path = os.path.join(output_folder, f"{frame[:-4]}_face_{i}.jpg")
-                face_crop.save(face_path)
-                processed_images += 1
-        except Exception as e:
-            print(f"❌ Error processing {frame}: {e}")
+        print(f"\n🎬 Processing frames from video: {video_name}")
+        for frame in sorted(os.listdir(video_frame_path)):  # Iterate over extracted frames for this video
+            frame_path = os.path.join(video_frame_path, frame)
+            try:
+                img = Image.open(frame_path).convert("RGB")
+                faces, _ = mtcnn.detect(img)
+                
+                if faces is None:
+                    print(f"🔸 No faces detected in {frame}. Skipping.")
+                    continue
+
+                print(f"🟢 Processing {frame} - Detected {len(faces)} face(s)")
+
+                for i, face in enumerate(faces):
+                    x1, y1, x2, y2 = map(int, face)
+                    face_crop = img.crop((x1, y1, x2, y2)).resize((224, 224))
+
+                    # ✅ Save inside the correct video-wise folder
+                    face_path = os.path.join(video_output_folder, f"{frame[:-4]}_face_{i}.jpg")
+                    face_crop.save(face_path)
+                    processed_images += 1
+            except Exception as e:
+                print(f"❌ Error processing {frame}: {e}")
 
     print(f"✅ Test faces extracted and saved in {output_folder}")
     print(f"📊 Total Test Faces Saved: {processed_images}")
+
 
 def process_frames(input_folder, output_folder):
     """
