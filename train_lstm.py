@@ -114,20 +114,36 @@ class LstmTrain:
             # LR scheduling
             self.scheduler.step(val_loss)
 
-            # Early stopping logic
+                        # Early stopping logic based on val loss, val acc, and overfitting detection
+            improvement = False
+
             if val_loss < self.best_val_loss - self.min_delta:
                 self.best_val_loss = val_loss
+                improvement = True
+
+            if len(self.history['val_acc']) == 0 or val_acc > max(self.history['val_acc']) + 0.01:
+                improvement = True
+
+            if improvement:
                 self.epochs_without_improvement = 0
                 self.best_model_state = self.model.state_dict()
                 os.makedirs("models", exist_ok=True)
                 torch.save(self.best_model_state, "models/lstm_model_best.pth")
-                print("✓ Saved best model checkpoint")
+                print("✓ Saved best model checkpoint (loss/accuracy improved)")
             else:
                 self.epochs_without_improvement += 1
-                print(f"⚠️ No improvement in val loss. Patience: {self.epochs_without_improvement}/{self.patience}")
-                if self.epochs_without_improvement >= self.patience:
-                    print("🛑 Early stopping triggered!")
-                    break
+                print(f"⚠️ No improvement. Patience: {self.epochs_without_improvement}/{self.patience}")
+
+            # Overfitting check
+            if train_acc >= 0.99 and val_acc < train_acc - 0.10:
+                print(f"⚠️ Overfitting suspected. Train Acc: {train_acc:.2f}, Val Acc: {val_acc:.2f}")
+                self.epochs_without_improvement += 1
+
+            # Stop if patience is exceeded
+            if self.epochs_without_improvement >= self.patience:
+                print("🛑 Early stopping triggered (no improvement or overfitting).")
+                break
+
 
             print("-" * 50)
 

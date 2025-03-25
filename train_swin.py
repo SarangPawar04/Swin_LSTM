@@ -159,18 +159,25 @@ if __name__ == "__main__":
         scheduler.step(avg_val_loss)
 
         # Early stopping logic
-        if avg_val_loss < best_val_loss:
+        # Early stopping logic with val loss, val acc, and overfitting check
+        if avg_val_loss < best_val_loss - 1e-4 or val_accuracy > best_val_acc + 0.1:
             best_val_loss = avg_val_loss
+            best_val_acc = val_accuracy
             epochs_without_improvement = 0
             os.makedirs("models", exist_ok=True)
             torch.save(model.state_dict(), "models/swin_model_best.pth")
             print("✅ New best model saved!")
         else:
-            epochs_without_improvement += 1
-            print(f"⚠️ No improvement. Patience counter: {epochs_without_improvement}/{patience}")
+            # Check for overfitting: high train acc, low val acc
+            if train_accuracy >= 99.0 and val_accuracy < train_accuracy - 10:
+                print(f"⚠️ Overfitting suspected. Train Acc: {train_accuracy:.2f}%, Val Acc: {val_accuracy:.2f}%")
+                epochs_without_improvement += 1
+            else:
+                print(f"⚠️ No improvement. Patience counter: {epochs_without_improvement+1}/{patience}")
+                epochs_without_improvement += 1
 
         if epochs_without_improvement >= patience:
-            print("\n🛑 Early stopping triggered.")
+            print("\n🛑 Early stopping triggered due to no improvement or overfitting.")
             break
 
     print("\n✅ Training Complete!")
