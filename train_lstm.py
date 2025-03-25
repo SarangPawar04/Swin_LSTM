@@ -8,35 +8,8 @@ from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 import matplotlib.pyplot as plt
 from lstm_model import DeepfakeLSTM, DeepfakeFeatureDataset
 
-class EarlyStopping:
-    def __init__(self, patience=7, min_delta=0, verbose=True):
-        """
-        Early stopping to stop training when validation loss doesn't improve for a given patience.
-        
-        Args:
-            patience (int): Number of epochs to wait before stopping (default: 7)
-            min_delta (float): Minimum change in monitored value to qualify as an improvement (default: 0)
-            verbose (bool): Whether to print messages (default: True)
-        """
-        self.patience = patience
-        self.min_delta = min_delta
-        self.verbose = verbose
-        self.counter = 0
-        self.best_loss = None
-        self.early_stop = False
-        
-    def __call__(self, val_loss):
-        if self.best_loss is None:
-            self.best_loss = val_loss
-        elif val_loss > self.best_loss - self.min_delta:
-            self.counter += 1
-            if self.verbose:
-                print(f'Early stopping counter: {self.counter} out of {self.patience}')
-            if self.counter >= self.patience:
-                self.early_stop = True
-        else:
-            self.best_loss = val_loss
-            self.counter = 0
+
+    
 class LstmTrain:
     def __init__(self, model, train_loader, val_loader, device="cuda", 
                  num_epochs=50, learning_rate=0.001, patience=5, min_delta=0.0):
