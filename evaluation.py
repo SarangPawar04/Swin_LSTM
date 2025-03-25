@@ -1,5 +1,7 @@
 import torch
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+import matplotlib.pyplot as plt
+from sklearn.metrics import roc_curve, auc
 from lstm_model import DeepfakeLSTM
 import json
 from datetime import datetime
@@ -69,6 +71,7 @@ def evaluate_model(model_path="models/lstm_model_best.pth", features_dir="datase
     print("\nRunning inference...")
     with torch.no_grad():
         predictions = lstm_model(test_features)
+        probs = predictions.squeeze().cpu().numpy()  # Probabilities for ROC
         predicted_labels = (predictions >= 0.5).long()
     
     # Generate true labels based on number of samples
@@ -125,6 +128,27 @@ def evaluate_model(model_path="models/lstm_model_best.pth", features_dir="datase
         json.dump(results, f, indent=4)
     
     print(f"\n✅ Detailed results saved to: {output_file}")
+
+        # Plot ROC Curve
+    fpr, tpr, _ = roc_curve(true_labels_np, probs)
+    roc_auc = auc(fpr, tpr)
+
+    plt.figure()
+    plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (AUC = {roc_auc:.4f})')
+    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic - LSTM')
+    plt.legend(loc="lower right")
+
+    roc_path = os.path.join(output_dir, f"roc_curve_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+    plt.savefig(roc_path)
+    plt.close()
+
+    print(f"📈 ROC AUC curve saved to: {roc_path}")
+
     
     return results
 
