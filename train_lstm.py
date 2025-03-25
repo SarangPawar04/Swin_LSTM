@@ -8,35 +8,8 @@ from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 import matplotlib.pyplot as plt
 from lstm_model import DeepfakeLSTM, DeepfakeFeatureDataset
 
-class EarlyStopping:
-    def __init__(self, patience=7, min_delta=0, verbose=True):
-        """
-        Early stopping to stop training when validation loss doesn't improve for a given patience.
-        
-        Args:
-            patience (int): Number of epochs to wait before stopping (default: 7)
-            min_delta (float): Minimum change in monitored value to qualify as an improvement (default: 0)
-            verbose (bool): Whether to print messages (default: True)
-        """
-        self.patience = patience
-        self.min_delta = min_delta
-        self.verbose = verbose
-        self.counter = 0
-        self.best_loss = None
-        self.early_stop = False
-        
-    def __call__(self, val_loss):
-        if self.best_loss is None:
-            self.best_loss = val_loss
-        elif val_loss > self.best_loss - self.min_delta:
-            self.counter += 1
-            if self.verbose:
-                print(f'Early stopping counter: {self.counter} out of {self.patience}')
-            if self.counter >= self.patience:
-                self.early_stop = True
-        else:
-            self.best_loss = val_loss
-            self.counter = 0
+
+    
 class LstmTrain:
     def __init__(self, model, train_loader, val_loader, device="cuda", 
                  num_epochs=50, learning_rate=0.001, patience=5, min_delta=0.0):
@@ -114,20 +87,36 @@ class LstmTrain:
             # LR scheduling
             self.scheduler.step(val_loss)
 
-            # Early stopping logic
+                        # Early stopping logic based on val loss, val acc, and overfitting detection
+            improvement = False
+
             if val_loss < self.best_val_loss - self.min_delta:
                 self.best_val_loss = val_loss
+                improvement = True
+
+            if len(self.history['val_acc']) == 0 or val_acc > max(self.history['val_acc']) + 0.01:
+                improvement = True
+
+            if improvement:
                 self.epochs_without_improvement = 0
                 self.best_model_state = self.model.state_dict()
                 os.makedirs("models", exist_ok=True)
                 torch.save(self.best_model_state, "models/lstm_model_best.pth")
-                print("✓ Saved best model checkpoint")
+                print("✓ Saved best model checkpoint (loss/accuracy improved)")
             else:
                 self.epochs_without_improvement += 1
-                print(f"⚠️ No improvement in val loss. Patience: {self.epochs_without_improvement}/{self.patience}")
-                if self.epochs_without_improvement >= self.patience:
-                    print("🛑 Early stopping triggered!")
-                    break
+                print(f"⚠️ No improvement. Patience: {self.epochs_without_improvement}/{self.patience}")
+
+            # Overfitting check
+            if train_acc >= 0.99 and val_acc < train_acc - 0.10:
+                print(f"⚠️ Overfitting suspected. Train Acc: {train_acc:.2f}, Val Acc: {val_acc:.2f}")
+                self.epochs_without_improvement += 1
+
+            # Stop if patience is exceeded
+            if self.epochs_without_improvement >= self.patience:
+                print("🛑 Early stopping triggered (no improvement or overfitting).")
+                break
+
 
             print("-" * 50)
 
