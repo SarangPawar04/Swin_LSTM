@@ -31,5 +31,8 @@ data/videos/
 dataset/extracted_features/
 models/*.pth
 data/*
+detect/*
+/detect
+/data
 # Results
 results.txt
