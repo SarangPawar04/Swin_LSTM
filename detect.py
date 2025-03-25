@@ -7,6 +7,8 @@ import json
 from datetime import datetime
 from lstm_model import DeepfakeLSTM
 from swin_feature_extraction import SwinFeatureExtractor
+from glob import glob
+import argparse
 
 def load_model(model_path, device):
     """Load the LSTM model and move it to the specified device."""
@@ -42,52 +44,45 @@ def process_image(image_path, feature_extractor, model, device):
         print(f"❌ Error processing {os.path.basename(image_path)}: {str(e)}")
         return None
 
-def main():
-    # Set device
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+def detect_deepfake(input_dir, output_dir="results"):
+    device = torch.device("mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
-    
-    # Initialize feature extractor and model
+
     feature_extractor = SwinFeatureExtractor()
     model = load_model("models/lstm_model_best.pth", device)
-    
-    # Create results directory if it doesn't exist
-    os.makedirs("results", exist_ok=True)
-    
-    # Process all images in the input directory
-    input_dir = "data/test_faces"
+
+    os.makedirs(args.output, exist_ok=True)
+
     results = []
     real_count = 0
     fake_count = 0
-    
+
+    image_paths = glob(os.path.join(input_dir, '**', '*.*'), recursive=True)
+
     print(f"\nProcessing images from: {input_dir}")
-    for filename in os.listdir(input_dir):
-        if filename.endswith(('.jpg', '.jpeg', '.png')):
-            image_path = os.path.join(input_dir, filename)
+    for image_path in image_paths:
+        if image_path.lower().endswith(('.jpg', '.jpeg', '.png')):
             confidence = process_image(image_path, feature_extractor, model, device)
-            
+            filename = os.path.relpath(image_path, input_dir)  # Show relative path in results
+
+
             if confidence is not None:
                 is_real = confidence < 0.5
                 if is_real:
                     real_count += 1
                 else:
                     fake_count += 1
-                
+
                 results.append({
                     "image": filename,
                     "prediction": "Real" if is_real else "Fake",
                     "confidence": confidence
                 })
-    
-    # Calculate percentages
+
     total = real_count + fake_count
-    if total > 0:
-        real_percentage = (real_count / total) * 100
-        fake_percentage = (fake_count / total) * 100
-    else:
-        real_percentage = fake_percentage = 0
-    
-    # Create results dictionary
+    real_percentage = (real_count / total) * 100 if total > 0 else 0
+    fake_percentage = (fake_count / total) * 100 if total > 0 else 0
+
     output = {
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "total_images": total,
@@ -97,17 +92,28 @@ def main():
         "fake_percentage": fake_percentage,
         "details": results
     }
-    
-    # Save results to JSON file
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_file = f"results/detection_results_{timestamp}.json"
+    output_file = os.path.join(args.output, f"detection_results_{timestamp}.json")
     with open(output_file, 'w') as f:
         json.dump(output, f, indent=4)
-    
+
     print(f"\nResults saved to: {output_file}")
     print(f"Total images processed: {total}")
     print(f"Real: {real_count} ({real_percentage:.1f}%)")
     print(f"Fake: {fake_count} ({fake_percentage:.1f}%)")
 
+    return 1 if fake_count > real_count else 0
+
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Deepfake detection on images using Swin + LSTM.")
+    parser.add_argument('--mode', choices=['test', 'detect'], default='test',
+                        help="Choose mode: 'test' for test_pipeline or 'detect' for video pipeline.")
+    parser.add_argument('--input', type=str, default=None, help="Custom input directory for face images.")
+    parser.add_argument('--output', type=str, default="results", help="Directory to save results.")
+    args = parser.parse_args()
+
+
+    input_dir = args.input if args.input else ("data/test_faces" if args.mode == "test" else "detect/detect_faces")
+
+    detect_deepfake(input_dir, args.output)
