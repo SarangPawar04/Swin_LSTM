@@ -96,6 +96,8 @@ if __name__ == "__main__":
     # ✅ Training Loop with Validation & Best Model Saving
     EPOCHS = 50
     best_val_loss = float("inf")
+    patience = 5
+    epochs_without_improvement = 0
     print("\nStarting training...")
 
     for epoch in range(EPOCHS):
@@ -108,19 +110,10 @@ if __name__ == "__main__":
         for batch_idx, (images, labels) in enumerate(train_loader):
             images = images.to(device)
             labels = labels.to(device)
-            
-            # Debug print
-            print(f"Batch shapes - Images: {images.shape}, Labels: {labels.shape}")
-            
+
             optimizer.zero_grad()
             outputs = model(images)
-            
-            # Ensure labels are the right shape
-            labels = labels.view(-1)  # Reshape to 1D tensor
-            
-            # Debug print
-            print(f"Output shape: {outputs.shape}, Labels shape: {labels.shape}")
-            
+            labels = labels.view(-1)
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
@@ -136,7 +129,7 @@ if __name__ == "__main__":
 
         train_accuracy = 100 * correct / total
         avg_train_loss = total_loss / len(train_loader)
-        
+
         # Validation Phase
         model.eval()
         val_loss = 0
@@ -165,11 +158,20 @@ if __name__ == "__main__":
         # Learning rate scheduling
         scheduler.step(avg_val_loss)
 
-        # Save best model
+        # Early stopping logic
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
+            epochs_without_improvement = 0
             os.makedirs("models", exist_ok=True)
             torch.save(model.state_dict(), "models/swin_model_best.pth")
             print("✅ New best model saved!")
+        else:
+            epochs_without_improvement += 1
+            print(f"⚠️ No improvement. Patience counter: {epochs_without_improvement}/{patience}")
+
+        if epochs_without_improvement >= patience:
+            print("\n🛑 Early stopping triggered.")
+            break
 
     print("\n✅ Training Complete!")
+
