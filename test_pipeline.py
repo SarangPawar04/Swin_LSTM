@@ -76,6 +76,21 @@ def main():
     ):
         return
     
+    # Step 6: Clearing test_frames content
+    if not run_command(
+        "python clear_contents.py --target data/test_frames", 
+        "Clearing test_frames Content"
+    ):
+        return
+    
+    # Step 6: Clearing test_faces content
+    if not run_command(
+        "python clear_contents.py --target data/test_faces", 
+        "Clearing test_faces Content"
+    ):
+        return
+
+    
     print("\n✨ Testing pipeline completed successfully!")
     print("\nResults are saved in the 'results' directory:")
     print("- Detection results: results/detection_results_*.json")

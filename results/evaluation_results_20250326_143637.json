@@ -1,5 +1,5 @@
 {
-    "timestamp": "2025-03-26 13:58:27",
+    "timestamp": "2025-03-26 14:36:37",
     "model_path": "models/lstm_model_best.pth",
     "metrics": {
         "accuracy": 0.5,

@@ -1,5 +1,5 @@
 {
-    "timestamp": "2025-03-26 13:58:26",
+    "timestamp": "2025-03-26 14:36:36",
     "total_images": 61,
     "real_count": 61,
     "fake_count": 0,
@@ -9,307 +9,307 @@
         {
             "image": "test_01/frame_205_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.41979268193244934
+            "confidence": 0.4054992198944092
         },
         {
             "image": "test_01/frame_250_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.4109766185283661
+            "confidence": 0.38812455534935
         },
         {
             "image": "test_01/frame_170_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.4157741665840149
+            "confidence": 0.39608386158943176
         },
         {
             "image": "test_01/frame_125_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.39496925473213196
+            "confidence": 0.3735361695289612
         },
         {
             "image": "test_01/frame_60_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.3677743971347809
+            "confidence": 0.33798646926879883
         },
         {
             "image": "test_01/frame_35_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.3585410416126251
+            "confidence": 0.3292095959186554
         },
         {
             "image": "test_01/frame_295_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.4156237542629242
+            "confidence": 0.3933643400669098
         },
         {
             "image": "test_01/frame_300_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.41120603680610657
+            "confidence": 0.39068132638931274
         },
         {
             "image": "test_01/frame_0_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.3652476668357849
+            "confidence": 0.3436819911003113
         },
         {
             "image": "test_01/frame_290_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.42131951451301575
+            "confidence": 0.40312451124191284
         },
         {
             "image": "test_01/frame_65_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.3861684799194336
+            "confidence": 0.3604298233985901
         },
         {
             "image": "test_01/frame_30_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.35455989837646484
+            "confidence": 0.3292922079563141
         },
         {
             "image": "test_01/frame_5_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.3630152940750122
+            "confidence": 0.3395731747150421
         },
         {
             "image": "test_01/frame_200_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.423586368560791
+            "confidence": 0.40649452805519104
         },
         {
             "image": "test_01/frame_255_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.4103138744831085
+            "confidence": 0.3885575234889984
         },
         {
             "image": "test_01/frame_175_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.4209009110927582
+            "confidence": 0.4047425389289856
         },
         {
             "image": "test_01/frame_120_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.380597859621048
+            "confidence": 0.3527648448944092
         },
         {
             "image": "test_01/frame_145_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.41124486923217773
+            "confidence": 0.38654226064682007
         },
         {
             "image": "test_01/frame_110_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.3707566261291504
+            "confidence": 0.3460301458835602
         },
         {
             "image": "test_01/frame_90_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.35701948404312134
+            "confidence": 0.3266923129558563
         },
         {
             "image": "test_01/frame_230_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.41491177678108215
+            "confidence": 0.39769700169563293
         },
         {
             "image": "test_01/frame_265_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.41284388303756714
+            "confidence": 0.392792284488678
         },
         {
             "image": "test_01/frame_180_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.41675475239753723
+            "confidence": 0.3978244662284851
         },
         {
             "image": "test_01/frame_55_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.35803577303886414
+            "confidence": 0.32869812846183777
         },
         {
             "image": "test_01/frame_185_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.41564708948135376
+            "confidence": 0.39357563853263855
         },
         {
             "image": "test_01/frame_50_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.3692084550857544
+            "confidence": 0.33309975266456604
         },
         {
             "image": "test_01/frame_140_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.394476979970932
+            "confidence": 0.3691836893558502
         },
         {
             "image": "test_01/frame_115_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.3835039734840393
+            "confidence": 0.35509127378463745
         },
         {
             "image": "test_01/frame_235_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.4162622392177582
+            "confidence": 0.3944553732872009
         },
         {
             "image": "test_01/frame_260_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.4094264805316925
+            "confidence": 0.38964349031448364
         },
         {
             "image": "test_01/frame_95_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.3586999177932739
+            "confidence": 0.3299487233161926
         },
         {
             "image": "test_01/frame_130_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.38451769948005676
+            "confidence": 0.36389803886413574
         },
         {
             "image": "test_01/frame_165_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.4160414934158325
+            "confidence": 0.3973272740840912
         },
         {
             "image": "test_01/frame_245_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.4142169952392578
+            "confidence": 0.3964197337627411
         },
         {
             "image": "test_01/frame_210_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.4176628589630127
+            "confidence": 0.4003475606441498
         },
         {
             "image": "test_01/frame_280_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.42155715823173523
+            "confidence": 0.4032413065433502
         },
         {
             "image": "test_01/frame_20_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.3562489449977875
+            "confidence": 0.3295009434223175
         },
         {
             "image": "test_01/frame_75_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.3790037930011749
+            "confidence": 0.35891368985176086
         },
         {
             "image": "test_01/frame_25_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.35577842593193054
+            "confidence": 0.3267689645290375
         },
         {
             "image": "test_01/frame_70_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.37894871830940247
+            "confidence": 0.3503240942955017
         },
         {
             "image": "test_01/frame_285_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.4227585196495056
+            "confidence": 0.40428030490875244
         },
         {
             "image": "test_01/frame_135_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.39570286870002747
+            "confidence": 0.3723464012145996
         },
         {
             "image": "test_01/frame_160_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.4091433882713318
+            "confidence": 0.3878796398639679
         },
         {
             "image": "test_01/frame_240_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.41943594813346863
+            "confidence": 0.4009515941143036
         },
         {
             "image": "test_01/frame_215_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.41152021288871765
+            "confidence": 0.39462751150131226
         },
         {
             "image": "test_01/frame_270_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.4181446135044098
+            "confidence": 0.4012470841407776
         },
         {
             "image": "test_01/frame_225_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.4154270887374878
+            "confidence": 0.39574098587036133
         },
         {
             "image": "test_01/frame_85_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.37570807337760925
+            "confidence": 0.34389108419418335
         },
         {
             "image": "test_01/frame_105_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.3688070476055145
+            "confidence": 0.34447407722473145
         },
         {
             "image": "test_01/frame_150_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.4016081690788269
+            "confidence": 0.3775521516799927
         },
         {
             "image": "test_01/frame_15_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.3603530824184418
+            "confidence": 0.33382338285446167
         },
         {
             "image": "test_01/frame_40_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.36617234349250793
+            "confidence": 0.3343454897403717
         },
         {
             "image": "test_01/frame_195_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.41894710063934326
+            "confidence": 0.3994397819042206
         },
         {
             "image": "test_01/frame_10_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.3779066801071167
+            "confidence": 0.3519561290740967
         },
         {
             "image": "test_01/frame_45_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.3656902313232422
+            "confidence": 0.33249619603157043
         },
         {
             "image": "test_01/frame_190_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.41451549530029297
+            "confidence": 0.3982444405555725
         },
         {
             "image": "test_01/frame_80_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.3727881908416748
+            "confidence": 0.3481409549713135
         },
         {
             "image": "test_01/frame_275_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.4161481261253357
+            "confidence": 0.39770078659057617
         },
         {
             "image": "test_01/frame_220_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.4139028787612915
+            "confidence": 0.3964167535305023
         },
         {
             "image": "test_01/frame_100_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.3677249848842621
+            "confidence": 0.33735573291778564
         },
         {
             "image": "test_01/frame_155_face_0.jpg",
             "prediction": "Real",
-            "confidence": 0.4022600054740906
+            "confidence": 0.37656840682029724
         }
     ]
 }

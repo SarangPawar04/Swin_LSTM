@@ -4,7 +4,6 @@ from PIL import Image
 import os
 from timm import create_model
 import argparse
-import shutil
 
 # Detect device (MPS for Mac M2, CUDA for GPUs, else CPU)
 device = torch.device("mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
@@ -167,20 +166,6 @@ class SwinFeatureExtractor:
             
             return chunked_features.to(self.device)
         
-def clear_folder_contents(folder):
-    """Deletes all files in the 'real' and 'fake' subdirectories of the given folder."""
-    for subfolder in ['real', 'fake']:
-        path = os.path.join(folder, subfolder)
-        if os.path.exists(path):
-            for file in os.listdir(path):
-                file_path = os.path.join(path, file)
-                try:
-                    if os.path.isfile(file_path) or os.path.islink(file_path):
-                        os.unlink(file_path)
-                    elif os.path.isdir(file_path):
-                        shutil.rmtree(file_path)
-                except Exception as e:
-                    print(f"❌ Error deleting {file_path}: {str(e)}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Extract features using Swin Transformer')
@@ -192,18 +177,5 @@ if __name__ == "__main__":
     
     try:
         extract_features(args.input, args.output, args.test)
-
-        # ✅ Clean up only for training data
-        if not args.test:
-            if os.path.exists(args.input):
-                print(f"\n🧹 Cleaning up extracted faces content in: {args.input}")
-                clear_folder_contents(args.input)
-
-            # Infer frames path
-            possible_frames_dir = os.path.join(os.path.dirname(args.input), "extracted_frames")
-            if os.path.exists(possible_frames_dir):
-                print(f"🧹 Cleaning up extracted frames content in: {possible_frames_dir}")
-                clear_folder_contents(possible_frames_dir)
-
     except Exception as e:
         print(f"❌ Error: {str(e)}")

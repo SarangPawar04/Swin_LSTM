@@ -50,8 +50,12 @@ def main():
     run_command("python train_swin.py", "Training Swin Transformer model")
     
     # Step 5: Extract features using Swin Transformer
-    run_command("python swin_feature_extraction.py --input data/extracted_faces --output dataset/extracted_features/", 
-                "Extracting features using Swin Transformer")
+    run_command("python clear_contents.py --target data/extracted_frames", 
+                "Clearing Extracted_frames Content")
+    
+    # Step 5: Extract features using Swin Transformer
+    run_command("python clear_contents.py --target data/extracted_faces", 
+                "Clearing Extracted_faces Content")
     
     ## LSTM TRAINING :
 
@@ -67,6 +71,13 @@ def main():
     run_command("python swin_feature_extraction.py --input data/extracted_faces --output dataset/extracted_features/", 
                 "Extracting features using Swin Transformer")
     
+    # Step 5: Extract features using Swin Transformer
+    run_command("python clear_contents.py --target data/extracted_frames", 
+                "Clearing Extracted_frames Content")
+    
+    # Step 5: Extract features using Swin Transformer
+    run_command("python clear_contents.py --target data/extracted_faces", 
+                "Clearing Extracted_faces Content")
 
     # Step 6: Train LSTM model
     run_command("python train_lstm.py", "Training LSTM model")
