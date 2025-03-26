@@ -1,0 +1,315 @@
+{
+    "timestamp": "2025-03-26 13:58:26",
+    "total_images": 61,
+    "real_count": 61,
+    "fake_count": 0,
+    "real_percentage": 100.0,
+    "fake_percentage": 0.0,
+    "details": [
+        {
+            "image": "test_01/frame_205_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.41979268193244934
+        },
+        {
+            "image": "test_01/frame_250_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.4109766185283661
+        },
+        {
+            "image": "test_01/frame_170_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.4157741665840149
+        },
+        {
+            "image": "test_01/frame_125_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.39496925473213196
+        },
+        {
+            "image": "test_01/frame_60_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.3677743971347809
+        },
+        {
+            "image": "test_01/frame_35_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.3585410416126251
+        },
+        {
+            "image": "test_01/frame_295_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.4156237542629242
+        },
+        {
+            "image": "test_01/frame_300_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.41120603680610657
+        },
+        {
+            "image": "test_01/frame_0_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.3652476668357849
+        },
+        {
+            "image": "test_01/frame_290_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.42131951451301575
+        },
+        {
+            "image": "test_01/frame_65_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.3861684799194336
+        },
+        {
+            "image": "test_01/frame_30_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.35455989837646484
+        },
+        {
+            "image": "test_01/frame_5_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.3630152940750122
+        },
+        {
+            "image": "test_01/frame_200_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.423586368560791
+        },
+        {
+            "image": "test_01/frame_255_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.4103138744831085
+        },
+        {
+            "image": "test_01/frame_175_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.4209009110927582
+        },
+        {
+            "image": "test_01/frame_120_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.380597859621048
+        },
+        {
+            "image": "test_01/frame_145_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.41124486923217773
+        },
+        {
+            "image": "test_01/frame_110_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.3707566261291504
+        },
+        {
+            "image": "test_01/frame_90_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.35701948404312134
+        },
+        {
+            "image": "test_01/frame_230_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.41491177678108215
+        },
+        {
+            "image": "test_01/frame_265_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.41284388303756714
+        },
+        {
+            "image": "test_01/frame_180_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.41675475239753723
+        },
+        {
+            "image": "test_01/frame_55_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.35803577303886414
+        },
+        {
+            "image": "test_01/frame_185_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.41564708948135376
+        },
+        {
+            "image": "test_01/frame_50_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.3692084550857544
+        },
+        {
+            "image": "test_01/frame_140_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.394476979970932
+        },
+        {
+            "image": "test_01/frame_115_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.3835039734840393
+        },
+        {
+            "image": "test_01/frame_235_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.4162622392177582
+        },
+        {
+            "image": "test_01/frame_260_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.4094264805316925
+        },
+        {
+            "image": "test_01/frame_95_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.3586999177932739
+        },
+        {
+            "image": "test_01/frame_130_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.38451769948005676
+        },
+        {
+            "image": "test_01/frame_165_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.4160414934158325
+        },
+        {
+            "image": "test_01/frame_245_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.4142169952392578
+        },
+        {
+            "image": "test_01/frame_210_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.4176628589630127
+        },
+        {
+            "image": "test_01/frame_280_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.42155715823173523
+        },
+        {
+            "image": "test_01/frame_20_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.3562489449977875
+        },
+        {
+            "image": "test_01/frame_75_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.3790037930011749
+        },
+        {
+            "image": "test_01/frame_25_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.35577842593193054
+        },
+        {
+            "image": "test_01/frame_70_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.37894871830940247
+        },
+        {
+            "image": "test_01/frame_285_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.4227585196495056
+        },
+        {
+            "image": "test_01/frame_135_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.39570286870002747
+        },
+        {
+            "image": "test_01/frame_160_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.4091433882713318
+        },
+        {
+            "image": "test_01/frame_240_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.41943594813346863
+        },
+        {
+            "image": "test_01/frame_215_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.41152021288871765
+        },
+        {
+            "image": "test_01/frame_270_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.4181446135044098
+        },
+        {
+            "image": "test_01/frame_225_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.4154270887374878
+        },
+        {
+            "image": "test_01/frame_85_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.37570807337760925
+        },
+        {
+            "image": "test_01/frame_105_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.3688070476055145
+        },
+        {
+            "image": "test_01/frame_150_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.4016081690788269
+        },
+        {
+            "image": "test_01/frame_15_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.3603530824184418
+        },
+        {
+            "image": "test_01/frame_40_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.36617234349250793
+        },
+        {
+            "image": "test_01/frame_195_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.41894710063934326
+        },
+        {
+            "image": "test_01/frame_10_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.3779066801071167
+        },
+        {
+            "image": "test_01/frame_45_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.3656902313232422
+        },
+        {
+            "image": "test_01/frame_190_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.41451549530029297
+        },
+        {
+            "image": "test_01/frame_80_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.3727881908416748
+        },
+        {
+            "image": "test_01/frame_275_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.4161481261253357
+        },
+        {
+            "image": "test_01/frame_220_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.4139028787612915
+        },
+        {
+            "image": "test_01/frame_100_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.3677249848842621
+        },
+        {
+            "image": "test_01/frame_155_face_0.jpg",
+            "prediction": "Real",
+            "confidence": 0.4022600054740906
+        }
+    ]
+}

@@ -36,6 +36,8 @@ def main():
     print("\n📁 Creating necessary directories...")
     create_directories()
     
+     ## SWIN TRAINING : 
+
     # Step 2: Extract frames from videos
     run_command("python extract_frames.py --input data/videos --output data/extracted_frames", 
                 "Extracting frames from videos")
@@ -51,6 +53,21 @@ def main():
     run_command("python swin_feature_extraction.py --input data/extracted_faces --output dataset/extracted_features/", 
                 "Extracting features using Swin Transformer")
     
+    ## LSTM TRAINING :
+
+    # Step 6: Extract frames from videos (organize video-wise)
+    run_command("python extract_frames.py --input data/videos --output data/extracted_frames --video-wise", 
+                "Extracting frames from videos (organizing video-wise)")
+    
+    # Step 7: Extract faces from frames (organize video-wise)
+    run_command("python extract_faces.py --input data/extracted_frames --output data/extracted_faces --video-wise", 
+                "Extracting faces from frames (organizing video-wise)")
+    
+    # Step 5: Extract features using Swin Transformer
+    run_command("python swin_feature_extraction.py --input data/extracted_faces --output dataset/extracted_features/", 
+                "Extracting features using Swin Transformer")
+    
+
     # Step 6: Train LSTM model
     run_command("python train_lstm.py", "Training LSTM model")
     
