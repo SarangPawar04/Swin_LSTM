@@ -64,7 +64,7 @@ def main():
     
     # Step 5: Run deepfake detection
     if not run_command(
-        "python detect.py --input data/test_faces --output results",
+        "python detect.py --mode test --input data/test_faces --output results",
         "Running deepfake detection"
     ):
         return
@@ -75,6 +75,21 @@ def main():
         "Evaluating model performance"
     ):
         return
+    
+    # Step 6: Clearing test_frames content
+    if not run_command(
+        "python clear_contents.py --target data/test_frames", 
+        "Clearing test_frames Content"
+    ):
+        return
+    
+    # Step 6: Clearing test_faces content
+    if not run_command(
+        "python clear_contents.py --target data/test_faces", 
+        "Clearing test_faces Content"
+    ):
+        return
+
     
     print("\n✨ Testing pipeline completed successfully!")
     print("\nResults are saved in the 'results' directory:")

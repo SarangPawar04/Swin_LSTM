@@ -2,7 +2,7 @@ import cv2
 import os
 import argparse
 
-def extract_frames(video_path, output_folder, frame_rate=5, is_test=False):
+def extract_frames(video_path, output_folder, frame_rate=5, is_test=False, video_wise=False):
     """
     Extracts frames from a video at a specified frame rate.
     """
@@ -10,6 +10,11 @@ def extract_frames(video_path, output_folder, frame_rate=5, is_test=False):
     if is_test:
         #frames extracted in video specific folders.
         output_folder = os.path.join(output_folder, video_name) 
+        os.makedirs(output_folder, exist_ok=True)
+        frame_prefix = "frame"
+    elif video_wise:
+        label = "real" if "real" in video_path.lower() else "fake"
+        output_folder = os.path.join(output_folder, label, video_name)
         os.makedirs(output_folder, exist_ok=True)
         frame_prefix = "frame"
     else:
@@ -26,10 +31,7 @@ def extract_frames(video_path, output_folder, frame_rate=5, is_test=False):
 
     while success:
         if frame_count % frame_rate == 0:
-            if is_test:
-                frame_filename = os.path.join(output_folder, f"{frame_prefix}_{frame_count}.jpg")
-            else:
-                frame_filename = os.path.join(output_folder, f"{frame_prefix}_{frame_count}.jpg")
+            frame_filename = os.path.join(output_folder, f"{frame_prefix}_{frame_count}.jpg")
             cv2.imwrite(frame_filename, frame)
             saved_count += 1
         success, frame = cap.read()
@@ -39,7 +41,7 @@ def extract_frames(video_path, output_folder, frame_rate=5, is_test=False):
     print(f"✅ Extracted {saved_count} frames from {video_path}")
     print(f"   Saved in: {output_folder}")
 
-def process_videos(input_folder, output_folder, frame_rate=5):
+def process_videos(input_folder, output_folder, frame_rate=5, video_wise=False):
     """
     Process videos from real and fake folders.
     """
@@ -53,7 +55,7 @@ def process_videos(input_folder, output_folder, frame_rate=5):
         for video in test_videos:
             video_path = os.path.join(input_folder, video)
             try:
-                extract_frames(video_path, output_folder, frame_rate, is_test=True)
+                extract_frames(video_path, output_folder, frame_rate, is_test=True, video_wise=video_wise)
             except Exception as e:
                 print(f"❌ Error processing {video}: {str(e)}")
         return
@@ -75,7 +77,7 @@ def process_videos(input_folder, output_folder, frame_rate=5):
             print(f"  - {video}")
             video_path = os.path.join(category_path, video)
             try:
-                extract_frames(video_path, output_folder, frame_rate, is_test=False)
+                extract_frames(video_path, output_folder, frame_rate, is_test=False, video_wise=video_wise)
             except Exception as e:
                 print(f"❌ Error processing {video}: {str(e)}")
 
@@ -84,12 +86,13 @@ if __name__ == "__main__":
     parser.add_argument('--input', required=True, help='Input folder containing videos')
     parser.add_argument('--output', required=True, help='Output folder for extracted frames')
     parser.add_argument('--frame-rate', type=int, default=5, help='Extract 1 frame every N frames')
-    
+    parser.add_argument('--video-wise', action='store_true', help='Group training frames by video inside real/fake folders')
+
     args = parser.parse_args()
     
     print(f"Processing videos from: {args.input}")
     print(f"Saving frames to: {args.output}")
     print(f"Frame rate: {args.frame_rate}")
     
-    process_videos(args.input, args.output, args.frame_rate)
+    process_videos(args.input, args.output, args.frame_rate, args.video_wise)
     print("\n✅ All videos processed!")

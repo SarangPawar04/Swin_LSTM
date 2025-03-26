@@ -6,44 +6,81 @@ import argparse
 # Initialize MTCNN with Improved Settings
 mtcnn = MTCNN(keep_all=True, min_face_size=10, thresholds=[0.6, 0.7, 0.7])
 
-def extract_faces_training(frame_folder, output_folder, category):
+def extract_faces_training(frame_folder, output_folder, category, video_wise=False):
     """
-    Extract faces for training data (with real/fake categories)
+    Extract faces for training data (with real/fake categories).
+    If video_wise=True, group extracted faces into video-wise subfolders.
     """
+    category_input = os.path.join(frame_folder, category)
     category_output = os.path.join(output_folder, category)
     os.makedirs(category_output, exist_ok=True)
-    
-    category_input = os.path.join(frame_folder, category)
+
     if not os.path.exists(category_input):
         print(f"❌ {category} folder not found in {frame_folder}")
         return
 
     processed_images = 0
     print(f"\n📁 Processing {category} frames...")
-    
-    for frame in sorted(os.listdir(category_input)):
-        frame_path = os.path.join(category_input, frame)
-        try:
-            img = Image.open(frame_path).convert("RGB")
-            faces, _ = mtcnn.detect(img)
-            
-            if faces is None:
-                print(f"🔸 No faces detected in {frame}. Skipping.")
+
+    # Iterate over either videos (if video_wise) or flat list of frames
+    if video_wise:
+        for video_name in sorted(os.listdir(category_input)):
+            video_path = os.path.join(category_input, video_name)
+            if not os.path.isdir(video_path):
+                continue  # Skip non-folder items
+
+            video_output_folder = os.path.join(category_output, video_name)
+            os.makedirs(video_output_folder, exist_ok=True)
+
+            for frame in sorted(os.listdir(video_path)):
+                if not frame.lower().endswith(('.jpg', '.jpeg', '.png')):
+                    continue
+                frame_path = os.path.join(video_path, frame)
+                try:
+                    img = Image.open(frame_path).convert("RGB")
+                    faces, _ = mtcnn.detect(img)
+
+                    if faces is None:
+                        print(f"🔸 No faces detected in {frame}. Skipping.")
+                        continue
+
+                    print(f"🟢 {video_name}/{frame} - Detected {len(faces)} face(s)")
+
+                    for i, face in enumerate(faces):
+                        x1, y1, x2, y2 = map(int, face)
+                        face_crop = img.crop((x1, y1, x2, y2)).resize((224, 224))
+                        face_path = os.path.join(video_output_folder, f"{frame[:-4]}_face_{i}_{category}.jpg")
+                        face_crop.save(face_path)
+                        processed_images += 1
+                except Exception as e:
+                    print(f"❌ Error processing {video_name}/{frame}: {e}")
+    else:
+        for frame in sorted(os.listdir(category_input)):
+            if not frame.lower().endswith(('.jpg', '.jpeg', '.png')):
                 continue
+            frame_path = os.path.join(category_input, frame)
+            try:
+                img = Image.open(frame_path).convert("RGB")
+                faces, _ = mtcnn.detect(img)
 
-            print(f"🟢 Processing {frame} - Detected {len(faces)} face(s)")
+                if faces is None:
+                    print(f"🔸 No faces detected in {frame}. Skipping.")
+                    continue
 
-            for i, face in enumerate(faces):
-                x1, y1, x2, y2 = map(int, face)
-                face_crop = img.crop((x1, y1, x2, y2)).resize((224, 224))
-                face_path = os.path.join(category_output, f"{frame[:-4]}_face_{i}_{category}.jpg")
-                face_crop.save(face_path)
-                processed_images += 1
-        except Exception as e:
-            print(f"❌ Error processing {frame}: {e}")
+                print(f"🟢 Processing {frame} - Detected {len(faces)} face(s)")
+
+                for i, face in enumerate(faces):
+                    x1, y1, x2, y2 = map(int, face)
+                    face_crop = img.crop((x1, y1, x2, y2)).resize((224, 224))
+                    face_path = os.path.join(category_output, f"{frame[:-4]}_face_{i}_{category}.jpg")
+                    face_crop.save(face_path)
+                    processed_images += 1
+            except Exception as e:
+                print(f"❌ Error processing {frame}: {e}")
 
     print(f"✅ {category.capitalize()} faces extracted and saved in {category_output}")
     print(f"📊 Total {category.capitalize()} Faces Saved: {processed_images}")
+
 
 def extract_faces_testing(frame_folder, output_folder):
     """
@@ -90,7 +127,7 @@ def extract_faces_testing(frame_folder, output_folder):
     print(f"📊 Total Test Faces Saved: {processed_images}")
 
 
-def process_frames(input_folder, output_folder):
+def process_frames(input_folder, output_folder, video_wise=False):
     """
     Automatically detect if this is training or testing data and process accordingly
     """
@@ -99,7 +136,7 @@ def process_frames(input_folder, output_folder):
         print("📁 Training mode detected (real/fake folders found)")
         os.makedirs(output_folder, exist_ok=True)
         for category in ['real', 'fake']:
-            extract_faces_training(input_folder, output_folder, category)
+            extract_faces_training(input_folder, output_folder, category, video_wise=video_wise)
     else:
         print("📁 Testing mode detected (processing all frames)")
         extract_faces_testing(input_folder, output_folder)
@@ -108,11 +145,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Extract faces from frames')
     parser.add_argument('--input', required=True, help='Input folder containing frames')
     parser.add_argument('--output', required=True, help='Output folder for extracted faces')
+    parser.add_argument('--video-wise', action='store_true', help='Group training faces by video inside real/fake folders')
     
     args = parser.parse_args()
     
     print(f"Processing frames from: {args.input}")
     print(f"Saving faces to: {args.output}")
     
-    process_frames(args.input, args.output)
+    process_frames(args.input, args.output, args.video_wise)
     print("\n✅ All frames processed!")
