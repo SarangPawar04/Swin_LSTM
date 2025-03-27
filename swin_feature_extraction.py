@@ -146,25 +146,7 @@ def extract_features(input_dir, output_dir, is_test=False):
                     torch.save(all_features, output_file)
                     print(f"✅ Saved features: {output_file}")
 
-class SwinFeatureExtractor:
-    def __init__(self):
-        self.device = torch.device("mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
-        self.model = swin_model.to(self.device)
-        self.model.eval()
-    
-    def extract_features(self, image_tensor):
-        """Extract features from an image tensor."""
-        with torch.no_grad():
-            features = self.model.forward_features(image_tensor)
-            if features.dim() == 4:
-                features = features.mean(dim=[1, 2])  # GAP
-            
-            # Split features into chunks
-            feature_tensor = features.squeeze()
-            chunked_features = split_features_into_chunks(feature_tensor)
-            chunked_features = chunked_features.unsqueeze(0)  # Add batch dimension
-            
-            return chunked_features.to(self.device)
+
         
 
 if __name__ == "__main__":

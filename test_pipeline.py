@@ -62,14 +62,9 @@ def main():
     ):
         return
     
-    # Step 5: Run deepfake detection
-    if not run_command(
-        "python detect.py --mode test --input data/test_faces --output results",
-        "Running deepfake detection"
-    ):
-        return
+
     
-    # Step 6: Run model evaluation
+    # Step 5: Run model evaluation
     if not run_command(
         "python evaluation.py",
         "Evaluating model performance"
@@ -83,7 +78,7 @@ def main():
     ):
         return
     
-    # Step 6: Clearing test_faces content
+    # Step 7: Clearing test_faces content
     if not run_command(
         "python clear_contents.py --target data/test_faces", 
         "Clearing test_faces Content"
