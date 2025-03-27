@@ -14,10 +14,11 @@ class DeepfakeFeatureDataset(Dataset):
         Args:
             feature_dir (str): Directory containing the feature files (real.pt and fake.pt)
         """
+        #still expecting real. pt and fake. pt files, need to make changes in it and convert it in such a way that it takes input videoname .pt
         self.real_features = torch.load(os.path.join(feature_dir, "real.pt"))
         self.fake_features = torch.load(os.path.join(feature_dir, "fake.pt"))
-        
         # Create labels (1 for real, 0 for fake)
+         #"real" -> 0 fake->1
         self.real_labels = torch.ones(len(self.real_features))
         self.fake_labels = torch.zeros(len(self.fake_features))
         
