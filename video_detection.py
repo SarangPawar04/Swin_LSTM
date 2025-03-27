@@ -64,7 +64,7 @@ def main():
     
     # Step 5: Run deepfake detection
     if not run_command(
-        "python detect.py --mode detect --input detect/detect_faces --output detect/results",
+        "python detect.py --mode detect --input detect/detect_features --output detect/results",
         "Running deepfake detection"
     ):
         return
