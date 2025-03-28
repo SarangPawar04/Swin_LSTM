@@ -25,6 +25,11 @@ def detect_from_features(input_dir, output_dir, model, device):
     for feature_path in feature_files:
         try:
             features = torch.load(feature_path, map_location=device)
+            # Flatten if shape is [T, 8, 128]
+            if features.ndim == 3 and features.shape[1:] == (8, 128):
+                features = features.reshape(features.shape[0], -1)
+
+            # Add batch dimension if missing
             if features.ndim == 2:
                 features = features.unsqueeze(0)
             features = features.to(device)
@@ -54,11 +59,6 @@ def detect_from_features(input_dir, output_dir, model, device):
 
     output = {
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "total": total,
-        "real_count": real_count,
-        "fake_count": fake_count,
-        "real_percentage": real_pct,
-        "fake_percentage": fake_pct,
         "details": results
     }
 

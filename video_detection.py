@@ -5,7 +5,6 @@ from pathlib import Path
 def create_directories():
     """Create necessary directories for testing."""
     directories = [
-        'detect/video',
         'detect/detect_frames',
         'detect/detect_faces',
         'detect/detect_features',
@@ -57,8 +56,22 @@ def main():
     
     # Step 4: Extract features using Swin Transformer (with --test flag)
     if not run_command(
-        "python swin_feature_extraction.py --input detect/detect_faces --output detect/detect_features",
+        "python swin_feature_extraction.py --input detect/detect_faces --output detect/detect_features --test",
         "Extracting features from faces"
+    ):
+        return
+    
+    # Step 6: Clearing detect_frames content
+    if not run_command(
+        "python clear_contents.py --target detect/detect_frames", 
+        "Clearing test_frames Content"
+    ):
+        return
+    
+    # Step 7: Clearing detect_faces content
+    if not run_command(
+        "python clear_contents.py --target detect/detect_faces", 
+        "Clearing test_faces Content"
     ):
         return
     
