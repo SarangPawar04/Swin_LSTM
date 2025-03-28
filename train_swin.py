@@ -94,7 +94,7 @@ if __name__ == "__main__":
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.5)  # Learning Rate Decay
 
     # ✅ Training Loop with Validation & Best Model Saving
-    EPOCHS = 1
+    EPOCHS = 50
     best_val_loss = float("inf")
     patience = 5
     epochs_without_improvement = 0

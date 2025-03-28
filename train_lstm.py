@@ -178,7 +178,7 @@ def main():
     train_loader=train_loader,
     val_loader=val_loader,
     device=device,
-    num_epochs=1,
+    num_epochs=50,
     learning_rate=0.001,
     patience=7,
     min_delta=0.0
