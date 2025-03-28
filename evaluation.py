@@ -1,35 +1,22 @@
 import torch
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_curve, auc, confusion_matrix
 import matplotlib.pyplot as plt
-from sklearn.metrics import roc_curve, auc
 from lstm_model import DeepfakeLSTM
+import seaborn as sns
 import json
 from datetime import datetime
 import os
 
 def evaluate_model(model_path="models/lstm_model_best.pth", features_dir="dataset/test_features", output_dir="results"):
-    """
-    Evaluate the model's performance on test data using video-wise features.
-    
-    Args:
-        model_path (str): Path to the trained LSTM model
-        features_dir (str): Directory containing video-wise test features
-        output_dir (str): Directory to save evaluation results
-    """
     print("\n🔍 Starting Model Evaluation...")
-    
-    # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
-    
-    # Set up device
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
-    
-    # Check if model exists
+
     if not os.path.exists(model_path):
-        raise FileNotFoundError(f"Model not found at {model_path}. Please ensure the model is trained and saved correctly.")
-    
-    # Load trained LSTM model
+        raise FileNotFoundError(f"Model not found at {model_path}")
+
     print("Loading LSTM model...")
     lstm_model = DeepfakeLSTM().to(device)
     try:
@@ -37,74 +24,60 @@ def evaluate_model(model_path="models/lstm_model_best.pth", features_dir="datase
         print("✓ Model loaded successfully")
     except Exception as e:
         raise Exception(f"Error loading model: {str(e)}")
-    
+
     lstm_model.eval()
-    
-    # Check if features directory exists
+
     if not os.path.exists(features_dir):
         raise FileNotFoundError(f"Features directory not found: {features_dir}")
-    
-    # Load test features from multiple video-wise files
+
     print("Loading test features...")
-    test_features_list = []
     video_names = []
+    probs = []
+    predicted_labels = []
 
     for filename in sorted(os.listdir(features_dir)):
         if filename.endswith(".pt"):
             video_path = os.path.join(features_dir, filename)
             try:
-                features = torch.load(video_path).to(device)  # Load tensor
-                test_features_list.append(features)
-                video_names.append(filename)
-                print(f"✓ Loaded {filename}")
+                features = torch.load(video_path).to(device)  # [T, 8, 128]
+                features = features.reshape(features.shape[0], -1).unsqueeze(0)  # [1, T, 1024]
+                with torch.no_grad():
+                    output = lstm_model(features)
+                    prob = output.item()
+                    pred = int(prob >= 0.5)
+                    probs.append(prob)
+                    predicted_labels.append(pred)
+                    video_names.append(filename)
+                print(f"✓ Processed {filename}")
             except Exception as e:
-                print(f"❌ Error loading {filename}: {str(e)}")
-    
-    if not test_features_list:
-        raise FileNotFoundError("No test feature files found in the directory!")
+                print(f"❌ Error processing {filename}: {str(e)}")
 
-    # Stack all test feature tensors
-    test_features = torch.cat(test_features_list, dim=0)  # Combine all videos
-    print(f"Total test samples: {test_features.shape[0]}")
-    
-    # Perform inference
-    print("\nRunning inference...")
-    with torch.no_grad():
-        predictions = lstm_model(test_features)
-        probs = predictions.squeeze().cpu().numpy()  # Probabilities for ROC
-        predicted_labels = (predictions >= 0.5).long()
-    
-    # Generate true labels based on number of samples
+    if not predicted_labels:
+        raise RuntimeError("No predictions generated!")
+
     num_samples = len(predicted_labels)
-    true_labels = torch.cat([
-        torch.zeros(num_samples // 2),
-        torch.ones(num_samples - num_samples // 2)
-    ]).to(device)
-    
-    # Convert to numpy for sklearn metrics
-    predicted_labels_np = predicted_labels.cpu().numpy()
-    true_labels_np = true_labels.cpu().numpy()
-    
+    # Assign true labels based on filename keywords (or modify as needed)
+    true_labels = [0 if "real" in name.lower() else 1 for name in video_names]
+
     # Calculate metrics
-    accuracy = accuracy_score(true_labels_np, predicted_labels_np)
-    precision = precision_score(true_labels_np, predicted_labels_np)
-    recall = recall_score(true_labels_np, predicted_labels_np)
-    f1 = f1_score(true_labels_np, predicted_labels_np)
-    
-    # Print metrics
+    accuracy = accuracy_score(true_labels, predicted_labels)
+    precision = precision_score(true_labels, predicted_labels)
+    recall = recall_score(true_labels, predicted_labels)
+    f1 = f1_score(true_labels, predicted_labels)
+
+    # Print results
     print("\n📊 Model Performance Metrics:")
     print(f"Accuracy:  {accuracy:.4f}")
     print(f"Precision: {precision:.4f}")
     print(f"Recall:    {recall:.4f}")
     print(f"F1-Score:  {f1:.4f}")
-    
-    # Print predictions summary
+
     print(f"\n📊 Predictions Summary:")
-    print(f"Total samples: {len(predicted_labels)}")
-    print(f"Predicted real: {(predicted_labels == 0).sum().item()}")
-    print(f"Predicted fake: {(predicted_labels == 1).sum().item()}")
-    
-    # Create results dictionary
+    print(f"Total samples: {num_samples}")
+    print(f"Predicted real: {predicted_labels.count(0)}")
+    print(f"Predicted fake: {predicted_labels.count(1)}")
+
+    # Save metrics + predictions
     results = {
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "model_path": model_path,
@@ -115,22 +88,20 @@ def evaluate_model(model_path="models/lstm_model_best.pth", features_dir="datase
             "f1_score": float(f1)
         },
         "predictions": {
-            "total_samples": len(predicted_labels),
-            "predicted_real": (predicted_labels == 0).sum().item(),
-            "predicted_fake": (predicted_labels == 1).sum().item()
+            "total_samples": num_samples,
+            "predicted_real": predicted_labels.count(0),
+            "predicted_fake": predicted_labels.count(1)
         },
         "processed_videos": video_names
     }
-    
-    # Save results to JSON
+
     output_file = os.path.join(output_dir, f"evaluation_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
     with open(output_file, 'w') as f:
         json.dump(results, f, indent=4)
-    
     print(f"\n✅ Detailed results saved to: {output_file}")
 
-        # Plot ROC Curve
-    fpr, tpr, _ = roc_curve(true_labels_np, probs)
+    # ROC Curve
+    fpr, tpr, _ = roc_curve(true_labels, probs)
     roc_auc = auc(fpr, tpr)
 
     plt.figure()
@@ -146,10 +117,20 @@ def evaluate_model(model_path="models/lstm_model_best.pth", features_dir="datase
     roc_path = os.path.join(output_dir, f"roc_curve_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
     plt.savefig(roc_path)
     plt.close()
-
     print(f"📈 ROC AUC curve saved to: {roc_path}")
 
-    
+    # Confusion Matrix
+    cm = confusion_matrix(true_labels, predicted_labels)
+    plt.figure(figsize=(6, 5))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=["Real", "Fake"], yticklabels=["Real", "Fake"])
+    plt.xlabel("Predicted Label")
+    plt.ylabel("True Label")
+    plt.title("Confusion Matrix")
+    cm_path = os.path.join(output_dir, f"confusion_matrix_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+    plt.savefig(cm_path)
+    plt.close()
+    print(f"📉 Confusion matrix saved to: {cm_path}")
+
     return results
 
 if __name__ == "__main__":

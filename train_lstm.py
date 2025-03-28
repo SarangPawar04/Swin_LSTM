@@ -6,7 +6,7 @@ import os
 import numpy as np
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 import matplotlib.pyplot as plt
-from lstm_model import DeepfakeLSTM, DeepfakeFeatureDataset
+from lstm_model import DeepfakeLSTM, DeepfakeFeatureDataset, collate_fn
 
 
     
@@ -167,8 +167,9 @@ def main():
     val_size = len(dataset) - train_size
     train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
 
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, collate_fn=collate_fn)
+    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, collate_fn=collate_fn)
+
 
     model = DeepfakeLSTM()
 
@@ -177,7 +178,7 @@ def main():
     train_loader=train_loader,
     val_loader=val_loader,
     device=device,
-    num_epochs=50,
+    num_epochs=1,
     learning_rate=0.001,
     patience=7,
     min_delta=0.0

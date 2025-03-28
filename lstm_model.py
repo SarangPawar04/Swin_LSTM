@@ -5,35 +5,37 @@ from torch.utils.data import Dataset, DataLoader
 import os
 import numpy as np
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+from torch.nn.utils.rnn import pad_sequence
 
 class DeepfakeFeatureDataset(Dataset):
     def __init__(self, feature_dir):
         """
-        Dataset class for loading chunked features.
-        
+        Dataset class for loading video-wise chunked features.
+        Each .pt file corresponds to one video (shape: [T, 8, 128])
+
         Args:
-            feature_dir (str): Directory containing the feature files (real.pt and fake.pt)
+            feature_dir (str): Directory containing feature files like real_video1.pt, fake_video2.pt
         """
-        #still expecting real. pt and fake. pt files, need to make changes in it and convert it in such a way that it takes input videoname .pt
-        self.real_features = torch.load(os.path.join(feature_dir, "real.pt"))
-        self.fake_features = torch.load(os.path.join(feature_dir, "fake.pt"))
-        # Create labels (1 for real, 0 for fake)
-         #"real" -> 0 fake->1
-        self.real_labels = torch.ones(len(self.real_features))
-        self.fake_labels = torch.zeros(len(self.fake_features))
-        
-        # Combine features and labels
-        self.features = torch.cat([self.real_features, self.fake_features], dim=0)
-        self.labels = torch.cat([self.real_labels, self.fake_labels], dim=0)
-        
+        self.feature_paths = []
+        self.labels = []
+
+        for filename in sorted(os.listdir(feature_dir)):
+            if filename.endswith(".pt"):
+                label = 0 if "real" in filename.lower() else 1
+                self.feature_paths.append(os.path.join(feature_dir, filename))
+                self.labels.append(label)
+
     def __len__(self):
-        return len(self.features)
-    
+        return len(self.feature_paths)
+
     def __getitem__(self, idx):
-        return self.features[idx], self.labels[idx]
+        path = self.feature_paths[idx]
+        features = torch.load(path)  # shape: [T, 8, 128]
+        label = self.labels[idx]
+        return features, label
 
 class DeepfakeLSTM(nn.Module):
-    def __init__(self, input_size=128, hidden_size=256, num_layers=2, dropout=0.5):
+    def __init__(self, input_size=1024, hidden_size=256, num_layers=2, dropout=0.5):
         """
         LSTM model for deepfake detection using chunked features.
         
@@ -162,6 +164,15 @@ def train_model(model, train_loader, val_loader, num_epochs=50, learning_rate=0.
     
     return best_model_state
 
+# The value of T is variable so therefore to add padding we use the function "collate_fn"
+# included Flattening: [8, 128] → [1024] so that it matches PyTorch LSTM's expected input format
+def collate_fn(batch):
+    sequences, labels = zip(*batch)
+    sequences = [s.view(s.size(0), -1).float() for s in sequences]  # [T, 1024]
+    padded_sequences = pad_sequence(sequences, batch_first=True)    # [B, max_T, 1024]
+    labels = torch.tensor(labels).float()
+    return padded_sequences, labels
+
 def main():
     # Set device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -177,9 +188,9 @@ def main():
     train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
     
     # Create data loaders
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
-    
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, collate_fn=collate_fn)
+    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, collate_fn=collate_fn)
+
     # Initialize model
     model = DeepfakeLSTM().to(device)
     

@@ -62,8 +62,6 @@ def main():
     ):
         return
     
-
-    
     # Step 5: Run model evaluation
     if not run_command(
         "python evaluation.py",
