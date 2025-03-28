@@ -49,33 +49,33 @@ def main():
     # Step 4: Train Swin Transformer model
     run_command("python train_swin.py", "Training Swin Transformer model")
     
-    # Step 5: Extract features using Swin Transformer
+    # Step 5: Clear extracted_frames content
     run_command("python clear_contents.py --target data/extracted_frames", 
                 "Clearing Extracted_frames Content")
     
-    # Step 5: Extract features using Swin Transformer
+    # Step 6: Clear extracted_faces content
     run_command("python clear_contents.py --target data/extracted_faces", 
                 "Clearing Extracted_faces Content")
     
     ## LSTM TRAINING :
 
-    # Step 6: Extract frames from videos (organize video-wise)
+    # Step 7: Extract frames from videos (organize video-wise)
     run_command("python extract_frames.py --input data/videos --output data/extracted_frames --video-wise", 
                 "Extracting frames from videos (organizing video-wise)")
     
-    # Step 7: Extract faces from frames (organize video-wise)
+    # Step 8: Extract faces from frames (organize video-wise)
     run_command("python extract_faces.py --input data/extracted_frames --output data/extracted_faces --video-wise", 
                 "Extracting faces from frames (organizing video-wise)")
     
-    # Step 5: Extract features using Swin Transformer
+    # Step 9: Extract features using Swin Transformer
     run_command("python swin_feature_extraction.py --input data/extracted_faces --output dataset/extracted_features/", 
                 "Extracting features using Swin Transformer")
     
-    # Step 5: Extract features using Swin Transformer
+    # Step 10: Clear extracted_frames content
     run_command("python clear_contents.py --target data/extracted_frames", 
                 "Clearing Extracted_frames Content")
     
-    # Step 5: Extract features using Swin Transformer
+    # Step 5: Clear extracted_faces content
     run_command("python clear_contents.py --target data/extracted_faces", 
                 "Clearing Extracted_faces Content")
 
