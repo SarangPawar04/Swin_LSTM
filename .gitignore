@@ -21,7 +21,7 @@ ENV/
 .DS_Store
 .AppleDouble
 .LSOverride
-
+/.DS_Store
 # Data and model files (large files)
 data/extracted_faces/
 data/extracted_frames/
