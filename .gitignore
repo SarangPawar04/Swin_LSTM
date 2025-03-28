@@ -37,3 +37,4 @@ detect/*
 # Results
 results.txt
 tasklist.txt
+test.py

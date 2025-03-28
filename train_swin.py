@@ -5,17 +5,22 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 from torch.utils.data import DataLoader, random_split
 from timm import create_model
+from torch.cuda.amp import autocast, GradScaler
 import os
 import sys
 # PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0
-# ✅ Set Device (GPU if available)
+# Set Device (GPU if available)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Fix MPS Support for macOS (if applicable)
 # if torch.backends.mps.is_available():
-#     device = torch.device("mps")
+    # device = torch.device("mps")
 
-# ✅ Define Swin Transformer Model
+# Enable AMP only if CUDA is available
+use_amp = torch.cuda.is_available()
+scaler = GradScaler(enabled=use_amp)
+
+#  Define Swin Transformer Model
 class CustomSwin(nn.Module):
     def __init__(self, num_classes=2):
         super(CustomSwin, self).__init__()
@@ -50,7 +55,7 @@ swin_model = CustomSwin()
 def split_features_into_chunks(features, chunk_size=8):
     return features.reshape(chunk_size, -1)
 
-# ✅ Data Transformations (Augmentation Added)
+#  Data Transformations (Augmentation Added)
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -75,27 +80,28 @@ if __name__ == "__main__":
     print(f"Training images: {len(train_dataset)}")
     print(f"Validation images: {len(val_dataset)}")
 
-    # ✅ Use Larger Batch Size (8 is too small)
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+    # Use Larger Batch Size (8 is too small)
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True,num_workers=2,pin_memory=True)
     val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 
-    # ✅ Initialize Model
+    #  Initialize Model
     model = CustomSwin(num_classes=2).to(device)
     print("Model initialized")
 
-    # ✅ Freeze Early Layers (Prevent Overfitting & Speed Up Training)
+    #  Freeze Early Layers (Prevent Overfitting & Speed Up Training)
     for name, param in model.named_parameters():
         if "layers.0" in name or "layers.1" in name:  # Freeze first 2 layers
             param.requires_grad = False
 
-    # ✅ Define Loss & Optimizer
+    #  Define Loss & Optimizer
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.AdamW(model.parameters(), lr=3e-5)  # AdamW is better for transformers
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.5)  # Learning Rate Decay
 
-    # ✅ Training Loop with Validation & Best Model Saving
+    #  Training Loop with Validation & Best Model Saving
     EPOCHS = 50
     best_val_loss = float("inf")
+    best_val_acc = 0.0
     patience = 5
     epochs_without_improvement = 0
     print("\nStarting training...")
@@ -112,11 +118,12 @@ if __name__ == "__main__":
             labels = labels.to(device)
 
             optimizer.zero_grad()
-            outputs = model(images)
-            labels = labels.view(-1)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
+            with autocast(enabled=use_amp):
+                outputs = model(images)
+                loss = criterion(outputs, labels)
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
 
             total_loss += loss.item()
             _, predicted = torch.max(outputs.data, 1)
@@ -166,10 +173,12 @@ if __name__ == "__main__":
             epochs_without_improvement = 0
             os.makedirs("models", exist_ok=True)
             torch.save(model.state_dict(), "models/swin_model_best.pth")
-            print("✅ New best model saved!")
+            print(" New best model saved!")
         else:
             # Check for overfitting: high train acc, low val acc
-            if train_accuracy >= 99.0 and val_accuracy < train_accuracy - 10:
+            OVERFITTING_TRAIN_ACC = 98.0
+            OVERFITTING_ACC_GAP = 5.0
+            if train_accuracy >= OVERFITTING_TRAIN_ACC and val_accuracy < train_accuracy - OVERFITTING_ACC_GAP:
                 print(f"⚠️ Overfitting suspected. Train Acc: {train_accuracy:.2f}%, Val Acc: {val_accuracy:.2f}%")
                 epochs_without_improvement += 1
             else:
@@ -180,5 +189,5 @@ if __name__ == "__main__":
             print("\n🛑 Early stopping triggered due to no improvement or overfitting.")
             break
 
-    print("\n✅ Training Complete!")
+    print("\n Training Complete!")
 

@@ -11,6 +11,7 @@ device = torch.device("mps" if torch.backends.mps.is_available() else "cuda" if 
 # Initialize Swin Transformer model
 swin_model = create_model('swin_base_patch4_window7_224', pretrained=True)
 swin_model.head = torch.nn.Identity()  # Remove classification head
+swin_model = torch.compile(swin_model)
 
 # Load fine-tuned model weights
 model_path = "models/swin_model_best.pth"
@@ -21,7 +22,6 @@ else:
     print(f"⚠️ Warning: Fine-tuned model weights not found! Using default pretrained model.")
 
 swin_model.eval()
-
 # Define image transformations
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
